@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0c0c0c;
+  --ink: #e8e8e8;
+  --dim: rgba(232, 232, 232, 0.55);
+  --line: rgba(232, 232, 232, 0.18);
+
+  /* Light "orb intro" scheme (Kioskly-style landing) */
+  --paper: #ffffff;
+  /* Warm off-white surface used by the skills ("what I can help with") page. */
+  --surface-2: #fbf6f2;
+  --sol: #252525;
+  --sol-dim: #5d5d5d;
+  --accent: #e94245;
+  --accent-2: #e96c42;
+  --logo: #7f7f7f;
+  --pill: rgba(178, 178, 178, 0.15);
+  --panel: #ececec;
+}
+
+/* Dark mode — swaps the paper-scheme tokens so every `bg-paper` / `text-sol`
+   surface flips automatically. Toggled by data-theme on <html>. */
+:root[data-theme="dark"] {
+  --paper: #0e0e10;
+  --surface-2: #141416;
+  --sol: #ededed;
+  --sol-dim: #9b9b9b;
+  --logo: #8a8a8a;
+  --pill: rgba(236, 236, 236, 0.1);
+  --line: rgba(236, 236, 236, 0.14);
+  --panel: #1b1b1f;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-ink: var(--ink);
+  --color-dim: var(--dim);
+  --color-line: var(--line);
+  --color-paper: var(--paper);
+  --color-surface-2: var(--surface-2);
+  --color-sol: var(--sol);
+  --color-sol-dim: var(--sol-dim);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-logo: var(--logo);
+  --color-pill: var(--pill);
+  --color-panel: var(--panel);
+  --font-sans: var(--font-onest);
+  --font-display: var(--font-orbitron);
+  --font-mono: var(--font-plex-mono);
+  --font-serif: var(--font-serif);
+}
+
+/* Base canvas colour lives on <html> only. Keeping it off <body> lets the
+   fixed, negative-z page-background layer (see Experience.tsx) show through —
+   otherwise body's own opaque background box paints over it. */
+html {
+  background: var(--bg);
+}
+html,
+body {
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* Ease the paper-scheme surfaces between themes without animating the
+   heavy WebGL / hero layers. */
+[data-theme] .theme-fade,
+.theme-fade {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-fade {
+    transition: none;
+  }
+}
+
+/* Paged feel: one scroll = one full-viewport page. The projects list adds its
+   own per-card snap points so the tall section never traps the scroll. */
+html {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
+  }
+}
+
+/* Outline display type (Utopia-style stroked headline) */
+.text-stroke {
+  color: transparent;
+  -webkit-text-stroke: 2px var(--ink);
+}
+
+@media (max-width: 640px) {
+  .text-stroke {
+    -webkit-text-stroke-width: 1.25px;
+  }
+}
+
+/* Endless skills ticker (content is duplicated once in markup) */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+}

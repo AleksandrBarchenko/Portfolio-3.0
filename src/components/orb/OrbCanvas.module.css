@@ -1,0 +1,51 @@
+.mount {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Bloom — a live blurred copy of the rendered orb (drawn each frame from the
+   WebGL canvas), so the glow always matches the orb's actual on-screen colors.
+   transform and opacity are driven imperatively from the render loop. */
+.bloom {
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  /* canvas is a replaced element — inset alone won't stretch it */
+  width: 140%;
+  height: 140%;
+  /* default before the RAF loop kicks in */
+  transform: scale(0.8);
+  filter: blur(40px) saturate(1.25) brightness(1.1);
+  pointer-events: none;
+}
+
+/* The WebGL canvas — kept in flow so it stacks above the absolute bloom copy */
+.mount canvas:not(.bloom) {
+  position: relative;
+}
+
+/* CSS-only stand-in when WebGL is unavailable */
+.fallbackOrb {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 30%, rgba(255, 255, 240, 0.9) 0%, transparent 40%),
+    radial-gradient(circle at 70% 72%, rgba(236, 66, 53, 0.8)  0%, transparent 52%),
+    radial-gradient(circle at 28% 65%, rgba(250, 188, 5, 0.75)  0%, transparent 45%),
+    radial-gradient(circle at 62% 28%, rgba(68, 135, 243, 0.8)  0%, transparent 52%),
+    radial-gradient(circle, #4487F3 0%, #34A855 50%, #FABC05 80%, #EC4235 100%);
+  filter: blur(6px);
+  animation: fallback-breathe 4s ease-in-out infinite;
+}
+
+@keyframes fallback-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
