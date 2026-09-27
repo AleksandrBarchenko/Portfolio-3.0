@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Drive Tailwind's `dark:` variant off the `data-theme="dark"` attribute on
+   <html> (matching the token swap below) rather than the OS colour scheme. */
+@custom-variant dark (&:where(:root[data-theme="dark"] *));
+
 :root {
   --bg: #0c0c0c;
   --ink: #e8e8e8;
@@ -13,7 +17,7 @@
   --sol: #252525;
   --sol-dim: #5d5d5d;
   --accent: #e94245;
-  --accent-2: #e96c42;
+  --accent-2: #e94245;
   --logo: #7f7f7f;
   --pill: rgba(178, 178, 178, 0.15);
   --panel: #ececec;

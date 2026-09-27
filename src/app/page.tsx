@@ -1,14 +1,13 @@
-import { SiteHeader } from "@/components/SiteHeader";
-import Experience from "@/components/Experience";
+import { SiteShell } from "@/components/SiteShell";
 import { ActiveSectionProvider } from "@/components/ActiveSection";
+import { AvatarModeProvider } from "@/components/AvatarMode";
 
 export default function Home() {
   return (
-    <ActiveSectionProvider>
-      <main id="top" className="theme-fade min-h-screen overflow-x-clip">
-        <SiteHeader />
-        <Experience />
-      </main>
-    </ActiveSectionProvider>
+    <AvatarModeProvider>
+      <ActiveSectionProvider>
+        <SiteShell />
+      </ActiveSectionProvider>
+    </AvatarModeProvider>
   );
 }

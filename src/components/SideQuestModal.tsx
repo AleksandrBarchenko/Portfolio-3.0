@@ -2,15 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { OrbCanvas } from "@/components/orb/OrbCanvas";
+import { Avatar } from "@/components/Avatar";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-/* OrbCanvas crashes if it initialises against a 0×0 mount (its first WebGL
-   frame draws a zero-size canvas). So we only mount it once the container has a
-   real size — which also means the hidden (display:none) breakpoint layout
-   never spins up a second, invisible orb. */
-function ModalOrb({ className }: { className: string }) {
+/* The avatar (orb on the 1st tab, TV head on the 2nd) draws a zero-size first
+   frame if it initialises against a 0×0 mount. So we only mount it once the
+   container has a real size — which also means the hidden (display:none)
+   breakpoint layout never spins up a second, invisible instance. */
+function ModalAvatar({ className }: { className: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -26,7 +26,7 @@ function ModalOrb({ className }: { className: string }) {
   }, []);
   return (
     <div ref={ref} className={className}>
-      {ready && <OrbCanvas state="idle" />}
+      {ready && <Avatar state="idle" />}
     </div>
   );
 }
@@ -208,30 +208,34 @@ export default function SideQuestModal({
           {/* Panel — translucent surface with a background blur, per the design
               (flips with the theme via the --panel token). */}
           <motion.div
-            className="relative flex h-full max-h-[820px] w-full max-w-[1440px] flex-col overflow-hidden rounded-3xl bg-panel/50 font-sans text-sol shadow-2xl backdrop-blur-xl"
+            className="relative flex h-full max-h-[820px] w-full max-w-[1440px] items-center justify-center overflow-hidden rounded-3xl bg-white/50 font-sans text-sol shadow-2xl backdrop-blur-xl lg:h-[80vh] lg:max-h-[80vh] lg:w-[80vw] lg:max-w-[80vw]"
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
             transition={{ duration: reduce ? 0 : 0.32, ease: EASE }}
           >
-            {/* Header row (shared across layouts) */}
-            <p className="absolute left-6 top-5 z-10 whitespace-pre text-[16px] font-medium text-sol sm:left-8">
+            {/* Navigation — pinned to the panel corners with a 48px margin,
+                independent of the centred content box below. */}
+            <p className="absolute left-6 top-5 z-10 whitespace-pre text-[18px] text-sol sm:left-8 lg:left-12 lg:top-12">
               {quest.label}
             </p>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="absolute right-4 top-4 z-10 flex h-12 w-12 items-center justify-center transition-opacity hover:opacity-70 sm:right-5"
+              className="absolute right-4 top-4 z-10 flex h-12 w-12 items-center justify-center transition-opacity hover:opacity-70 sm:right-5 lg:right-12 lg:top-12"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/sidequest/close.svg" alt="" className="h-7 w-7" aria-hidden />
             </button>
 
+            {/* Content box — on large screens the panel above grows to 80% of the
+                screen, but the content keeps its current size and stays centred. */}
+            <div className="relative flex h-full w-full flex-col lg:h-[820px] lg:max-h-full lg:w-[1440px] lg:max-w-full">
             {/* Desktop scatter — faithful absolute layout. */}
             <div className="relative hidden flex-1 lg:block">
-              {/* Live orb — same look/behaviour as the rest of the site (idle). */}
-              <ModalOrb className="absolute left-[2.5%] top-[7%] aspect-square w-[34%]" />
+              {/* Live avatar — orb or TV head per the active tab (idle). */}
+              <ModalAvatar className="absolute left-[2.5%] top-[7%] aspect-square w-[34%]" />
               <TypingBlurb
                 blurb={blurb}
                 shown={shown}
@@ -251,7 +255,7 @@ export default function SideQuestModal({
 
             {/* Mobile / tablet — stacked and scrollable. */}
             <div className="flex flex-1 flex-col items-center gap-8 overflow-y-auto px-6 pb-10 pt-20 lg:hidden">
-              <ModalOrb className="aspect-square w-52 max-w-[60%]" />
+              <ModalAvatar className="aspect-square w-52 max-w-[60%]" />
               <TypingBlurb
                 blurb={blurb}
                 shown={shown}
@@ -269,6 +273,7 @@ export default function SideQuestModal({
                   />
                 ))}
               </div>
+            </div>
             </div>
           </motion.div>
         </motion.div>

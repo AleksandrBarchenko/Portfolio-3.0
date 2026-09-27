@@ -7,13 +7,16 @@ import {
   useMotionValue,
   useReducedMotion,
 } from "framer-motion";
-import { OrbCanvas } from "@/components/orb/OrbCanvas";
+import { Avatar } from "@/components/Avatar";
 import type { OrbState } from "@/types/orb";
 import { SHELL } from "@/components/SiteHeader";
 import Projects from "@/components/Projects";
 import Skills from "@/components/Skills";
+import VideoModal from "@/components/VideoModal";
 import { TypeOnHover } from "@/components/TypeOnHover";
+import { CopyLink } from "@/components/CopyLink";
 import { useActiveSection, PAGE_BG, BG_TRANSITION } from "@/components/ActiveSection";
+import { useAvatarMode } from "@/components/AvatarMode";
 
 // Fixed line breaks so each line reads in exactly three centred lines. The
 // typing effect reveals the "\n"s as it goes (rendered with whitespace-pre-line).
@@ -24,14 +27,15 @@ const CASES =
 const CTA_LINE =
   "Have a project in mind\nyou need a help with?\nLet’s move it together";
 
-/* Client logos (grey PNG lockups), laid out 3 across × 2 down. */
-const LOGOS: Record<string, string> = {
-  google: "/logos/l-google.png",
-  vodafone: "/logos/l-vodafone.png",
-  hilton: "/logos/l-hilton.png",
-  elio: "/logos/l-elio.png",
-  underarmour: "/logos/l-underarmour.png",
-  cabei: "/logos/l-cabei.png",
+/* Client logos, laid out 3 across × 2 down. Each has a light- and dark-mode
+   lockup; the pair is swapped by the `dark:` variant (driven by data-theme). */
+const LOGOS: Record<string, { light: string; dark: string }> = {
+  google: { light: "/logos/google-light.svg", dark: "/logos/google-dark.svg" },
+  vodafone: { light: "/logos/vodafone-light.svg", dark: "/logos/vodafone-dark.svg" },
+  hilton: { light: "/logos/hilton-light.svg", dark: "/logos/hilton-dark.svg" },
+  elio: { light: "/logos/elio-light.svg", dark: "/logos/elio-dark.svg" },
+  underarmour: { light: "/logos/underarmour-light.svg", dark: "/logos/underarmour-dark.svg" },
+  cabei: { light: "/logos/cabei-light.svg", dark: "/logos/cabei-dark.svg" },
 };
 const LOGO_GRID = ["google", "vodafone", "hilton", "elio", "underarmour", "cabei"];
 
@@ -41,6 +45,33 @@ type Page = "hero" | "video" | "projects" | "skills" | "cta";
 const EASE = [0.65, 0, 0.35, 1] as const;
 
 const SPEECH_W = 380;
+
+// Intro glide to the left edge: normal pace, and the hurried pace used once the
+// visitor tries to scroll (or navigates) before the intro has finished.
+const GLIDE = 1.15;
+const RUSH_GLIDE = 0.45;
+// After a hurried intro, the scroll lock only releases once wheel/key input has
+// been quiet this long — so the trackpad momentum of the gesture that hurried
+// the intro doesn't also fling the page. The *next* scroll moves the page.
+const INPUT_QUIET_MS = 220;
+const SCROLL_KEYS = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", " ", "Home", "End"]);
+
+// TV-head-only: the still shown inside the screen for the video section, the
+// resting three-quarter turn on the hero, and how much the head grows when it
+// centres for the video page.
+const VIDEO_POSTER = "/video/frame.png";
+// 0 so the head's resting turn is driven entirely by the per-state `yaw` in
+// DEFAULT_TV_SETTINGS (the tuning lab's single source of truth), not layered on.
+const HERO_YAW = 0;
+// The video section features the head large — 3× the size it is on the hero — so
+// it dominates as the "watch the overview" moment. This is the single knob for
+// the video head's size (videoSpeechXY moves the caption to clear it).
+const VIDEO_SCALE = 1.2;
+
+// Case-studies overview shown in the video modal (opened by clicking the TV
+// head's screen, or the standalone play button in orb mode).
+const VIDEO_ID = "wAmmrrn-voc";
+const VIDEO_START = 1;
 
 function Caret() {
   return (
@@ -60,8 +91,23 @@ function useViewport() {
   return vp;
 }
 
-function geom(vw: number, vh: number) {
-  const orbW = Math.min(Math.round(vw * 0.4), 460);
+// Head/orb square size. Capped at 460 (reached ~1150px wide, so it's 100% by
+// 1400). In TV-head mode it keeps growing proportionally with the viewport past
+// 1400 so it doesn't look lost on large screens; the orb stays capped.
+function headSize(vw: number, face: boolean) {
+  const base = Math.min(Math.round(vw * 0.4), 460);
+  return face && vw > 1400 ? Math.round(460 * (vw / 1400)) : base;
+}
+// Pixels the head has grown beyond its 460 cap. This surplus is absorbed by the
+// empty left margin (the "side space") — the head slides left as it grows so its
+// right edge stays put and never rides over the copy sitting to its right.
+function headGrow(vw: number, face: boolean) {
+  return headSize(vw, face) - Math.min(Math.round(vw * 0.4), 460);
+}
+
+function geom(vw: number, vh: number, face = false) {
+  const orbW = headSize(vw, face);
+  const grow = headGrow(vw, face);
   const shellPad = vw >= 1024 ? 56 : vw >= 640 ? 40 : 24;
   const shellLeft = Math.max(shellPad, (vw - 1240) / 2 + shellPad);
   // Vertically centre the orb+caption block: the square canvas is padded with a
@@ -71,26 +117,49 @@ function geom(vw: number, vh: number) {
   const blockY = vh / 2 - orbW * 0.56 - 48;
   return {
     orbW,
-    leftX: shellLeft - 24,
+    // Anchor the head's right edge where the 460 cap put it and let any surplus
+    // grow left into the margin, so the enlarged head clears the heading to its
+    // right instead of riding over it (see the hero overlap this fixes).
+    leftX: shellLeft - 24 - grow,
     centerX: vw / 2 - orbW / 2,
     centerY: blockY,
     midY: blockY,
     ctaY: blockY,
+    // Video page (face mode): identical framing to the hero-centred intro — same
+    // box position and (via videoSpeechXY) the same caption offset — so the head
+    // and its caption sit exactly where they do on the hero, no state-to-state
+    // margin drift now that the head is the same size in both (VIDEO_SCALE = 1).
+    videoX: vw / 2 - orbW / 2,
+    videoY: blockY,
   };
+}
+
+/* Caption centred under the video-page head. The head is scaled up (VIDEO_SCALE)
+   about the box centre, so its visible bottom drops well below the box — the
+   caption sits past that so the head→caption gap still reads like the hero's. */
+function videoSpeechXY(g: ReturnType<typeof geom>) {
+  return { x: g.videoX + g.orbW / 2 - SPEECH_W / 2, y: g.videoY + g.orbW * 1.0 };
 }
 
 /* Speech box is always centred UNDER the orb (text stays centered even after the
    orb glides left). Returns the box's top-left x and its y. The 0.82 factor sits
    the caption close under the orb's visible bottom (~0.74 of the box). */
 function speechXY(g: ReturnType<typeof geom>, orbX: number, orbY: number) {
-  return { x: orbX + g.orbW / 2 - SPEECH_W / 2, y: orbY + g.orbW * 0.82 };
+  return { x: orbX + g.orbW / 2 - SPEECH_W / 2, y: orbY + g.orbW * 0.93 };
 }
 
 export default function Experience() {
   const reduce = useReducedMotion();
   const { w: vw, h: vh, desktop } = useViewport();
+  // The TV head has a screen the video can play inside; the orb does not. In
+  // face mode the video section centres the head and shows the still in its
+  // screen — in orb mode we fall back to the standalone torn-photo frame.
+  const { mode } = useAvatarMode();
+  const face = mode === "face";
 
   const [phase, setPhase] = useState<"intro" | "ready">("intro");
+  // The case-studies video modal, opened by clicking the TV head's screen.
+  const [videoOpen, setVideoOpen] = useState(false);
   // Single shared source of truth for the active section (see ActiveSection) —
   // the same value drives the backdrop here and the sticky header, so their
   // colours can never fall out of sync during a transition.
@@ -98,7 +167,19 @@ export default function Experience() {
   // Scroll stays locked through the intro: the orb greets from the viewport
   // centre, then glides to the left edge. Only once that glide finishes does
   // scrolling become available, so the user can't jump ahead of the script.
+  // Scrolling (or navigating) during the intro doesn't just bounce off the lock:
+  // it fast-forwards the rest of the script instead (see `rushIntro`).
   const [scrollLocked, setScrollLocked] = useState(true);
+  // Set when the intro glide has landed; the lock then releases as soon as the
+  // visitor's scroll input goes quiet (immediately if they never scrolled).
+  const [glideDone, setGlideDone] = useState(false);
+  const rushed = useRef(false);
+  const lastInput = useRef(0);
+  // The hero's right block (heading + logos) reveals off its own flag rather
+  // than `scrollLocked`, so it can start fading in slightly before the head has
+  // fully landed — the two states then read as one continuous motion instead of
+  // a lock-step hand-off with a perceptible gap.
+  const [heroContentIn, setHeroContentIn] = useState(false);
 
   const [line, setLine] = useState(GREETING);
   const [typed, setTyped] = useState(reduce ? GREETING.length : 0);
@@ -156,10 +237,96 @@ export default function Experience() {
     };
   }, [scrollLocked]);
 
+  // Skip straight to the end of the greeting. With `phase` → "ready" the
+  // orchestration below runs the (now hurried) glide to the left edge.
+  const finishGreeting = () => {
+    rushed.current = true;
+    setSpeaking(false);
+    setTyped(GREETING.length);
+    setPhase("ready");
+  };
+
+  // Scroll attempts during the intro fast-forward it rather than being ignored.
+  // In-page nav links (e.g. "work") and focus jumps must never leave the page
+  // stuck behind the lock, so those finish the intro and release immediately.
+  useEffect(() => {
+    if (!desktop || !scrollLocked) return;
+    // overflow:hidden alone doesn't stop Chrome's snap-aware key scrolling, so
+    // swallow the input too — this gesture hurries the intro, it doesn't scroll.
+    const rushIntro = (e: Event) => {
+      e.preventDefault();
+      lastInput.current = performance.now();
+      if (rushed.current) return;
+      if (phase === "intro") {
+        finishGreeting();
+        return;
+      }
+      // Glide already under way — hurry it the rest of the way.
+      rushed.current = true;
+      const g = geom(vp.current.w, vp.current.h, face);
+      setHeroContentIn(true);
+      speech.start(
+        { ...speechXY(g, g.leftX, g.midY), opacity: 1 },
+        { duration: RUSH_GLIDE, ease: EASE },
+      );
+      orb
+        .start({ x: g.leftX, y: g.midY, scale: 1, opacity: 1 }, { duration: RUSH_GLIDE, ease: EASE })
+        .then(() => setGlideDone(true));
+    };
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target instanceof Element ? e.target : null;
+      if (t?.closest("input, textarea, select, button, [contenteditable]")) return;
+      if (SCROLL_KEYS.has(e.key)) rushIntro(e);
+    };
+    const onClick = (e: MouseEvent) => {
+      if (!(e.target instanceof Element) || !e.target.closest('a[href^="#"]')) return;
+      if (phase === "intro") finishGreeting();
+      setHeroContentIn(true);
+      setScrollLocked(false);
+    };
+    window.addEventListener("wheel", rushIntro, { passive: false });
+    window.addEventListener("touchmove", rushIntro, { passive: false });
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("wheel", rushIntro);
+      window.removeEventListener("touchmove", rushIntro);
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("click", onClick, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desktop, scrollLocked, phase, face, orb, speech]);
+
+  // Safety net: if the page moves off the hero while still locked (any
+  // programmatic scroll the click handler didn't catch), never trap the visitor.
+  useEffect(() => {
+    if (!scrollLocked || active === "hero") return;
+    if (phase === "intro") finishGreeting();
+    setHeroContentIn(true);
+    setScrollLocked(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, scrollLocked]);
+
+  // Release the lock once the glide has landed and scroll input has gone quiet.
+  useEffect(() => {
+    if (!glideDone || !scrollLocked) return;
+    let t = 0;
+    const check = () => {
+      const idle = performance.now() - lastInput.current;
+      if (idle >= INPUT_QUIET_MS) setScrollLocked(false);
+      else t = window.setTimeout(check, INPUT_QUIET_MS - idle);
+    };
+    check();
+    return () => window.clearTimeout(t);
+  }, [glideDone, scrollLocked]);
+
   // The intro glide is desktop-only (mobile shows a per-section orb), so there's
   // nothing to wait for on mobile — release the lock immediately there.
   useEffect(() => {
-    if (!desktop) setScrollLocked(false);
+    if (!desktop) {
+      setScrollLocked(false);
+      setHeroContentIn(true);
+    }
   }, [desktop]);
 
   // Type the current line while `speaking`.
@@ -233,7 +400,7 @@ export default function Experience() {
   // changes (geometry is read from a ref so a resize doesn't replay the anim).
   useEffect(() => {
     if (!desktop) return;
-    const g = geom(vp.current.w, vp.current.h);
+    const g = geom(vp.current.w, vp.current.h, face);
     const fromIntro = prev.current.phase === "intro";
     prev.current = { phase, active };
     let cancelled = false;
@@ -245,19 +412,32 @@ export default function Experience() {
         return;
       }
       if (active === "hero") {
+        // Hurried when the visitor scrolled/navigated before the intro ended.
+        const dur = fromIntro && rushed.current ? RUSH_GLIDE : GLIDE;
         const glide = orb.start(
           { x: g.leftX, y: g.midY, scale: 1, opacity: 1 },
-          { duration: 1.15, ease: EASE },
+          { duration: dur, ease: EASE },
         );
         const pos = speechXY(g, g.leftX, g.midY);
         if (fromIntro) {
           // Keep the greeting; just glide it (centred) under the moved orb, then
           // release the scroll lock once the orb has settled at the left edge.
-          speech.start({ ...pos, opacity: 1 }, { duration: 1.15, ease: EASE });
+          speech.start({ ...pos, opacity: 1 }, { duration: dur, ease: EASE });
+          // Start revealing the right block a touch before the glide ends — the
+          // head is already most of the way left, so the two motions overlap
+          // and read as one beat instead of a gapped hand-off.
+          const revealT = window.setTimeout(() => {
+            if (!cancelled) setHeroContentIn(true);
+          }, dur * 700);
           await glide;
-          if (cancelled) return;
-          setScrollLocked(false);
+          if (cancelled) {
+            window.clearTimeout(revealT);
+            return;
+          }
+          setHeroContentIn(true);
+          setGlideDone(true);
         } else {
+          setHeroContentIn(true);
           await speech.start({ opacity: 0 }, { duration: 0.4, ease: EASE });
           if (cancelled) return;
           setLine(GREETING);
@@ -267,11 +447,21 @@ export default function Experience() {
           speech.start({ opacity: 1 }, { duration: 0.4, ease: EASE });
         }
       } else if (active === "video") {
-        orb.start({ x: g.leftX, y: g.midY, scale: 1, opacity: 1 }, { duration: 0.85, ease: EASE });
+        // Face mode: the head glides to centre and grows, its screen carries the
+        // video, and the caption sits centred beneath it. Orb mode: the head
+        // stays at the left edge next to the standalone video frame.
+        if (face) {
+          orb.start(
+            { x: g.videoX, y: g.videoY, scale: VIDEO_SCALE, opacity: 1 },
+            { duration: 0.95, ease: EASE },
+          );
+        } else {
+          orb.start({ x: g.leftX, y: g.midY, scale: 1, opacity: 1 }, { duration: 0.85, ease: EASE });
+        }
         // old text fades out, new text types in
         await speech.start({ opacity: 0 }, { duration: 0.4, ease: EASE });
         if (cancelled) return;
-        speech.set(speechXY(g, g.leftX, g.midY));
+        speech.set(face ? videoSpeechXY(g) : speechXY(g, g.leftX, g.midY));
         const first = !spoken.current.video;
         spoken.current.video = true;
         setLine(CASES);
@@ -294,15 +484,18 @@ export default function Experience() {
     return () => {
       cancelled = true;
     };
-  }, [phase, active, desktop, orb, speech]);
+  }, [phase, active, desktop, face, orb, speech]);
 
   // Reposition instantly on resize (no replay of the transition animation).
   useEffect(() => {
     if (!desktop) return;
-    const g = geom(vw, vh);
+    const g = geom(vw, vh, face);
     if (phase === "intro") {
       orb.set({ x: g.centerX, y: g.centerY, scale: 1, opacity: 1 });
       speech.set(speechXY(g, g.centerX, g.centerY));
+    } else if (active === "video" && face) {
+      orb.set({ x: g.videoX, y: g.videoY, scale: VIDEO_SCALE, opacity: 1 });
+      speech.set(videoSpeechXY(g));
     } else if (active === "hero" || active === "video") {
       orb.set({ x: g.leftX, y: g.midY, scale: 1, opacity: 1 });
       speech.set(speechXY(g, g.leftX, g.midY));
@@ -314,7 +507,7 @@ export default function Experience() {
 
   const orbState: OrbState = speaking ? "replying" : "idle";
   const displayText = speaking ? line.slice(0, typed) : line;
-  const g = geom(vw, vh);
+  const g = geom(vw, vh, face);
 
   return (
     <>
@@ -331,13 +524,25 @@ export default function Experience() {
           className="pointer-events-none fixed inset-0 z-20 overflow-hidden"
           style={{ y: exitY, opacity: exitOpacity }}
         >
+          {/* The overlay is pointer-events-none so it never blocks the page. Re-
+              enable events on just the head's box while it's the clickable video
+              head, so clicking its screen opens the modal. */}
           <motion.div
-            className="absolute left-0 top-0"
+            className={`absolute left-0 top-0 ${
+              face && active === "video" ? "pointer-events-auto" : ""
+            }`}
             style={{ width: g.orbW, height: g.orbW }}
             initial={{ opacity: 0 }}
             animate={orb}
           >
-            <OrbCanvas state={orbState} />
+            <Avatar
+              state={orbState}
+              baseYaw={active === "video" ? 0 : HERO_YAW}
+              screenMediaSrc={VIDEO_POSTER}
+              screenMediaActive={face && active === "video"}
+              screenShowPlay={face && active === "video"}
+              onScreenActivate={() => setVideoOpen(true)}
+            />
           </motion.div>
           <motion.p
             className="absolute left-0 top-0 whitespace-pre-line text-center text-[22px] leading-8 text-sol-dim"
@@ -359,8 +564,23 @@ export default function Experience() {
       >
         <motion.div
           initial={false}
-          animate={{ opacity: phase === "ready" ? 1 : 0, y: phase === "ready" ? 0 : 24 }}
-          transition={{ duration: 0.95, ease: EASE }}
+          animate={{
+            // Reveal on intro (rising from below), but only once the head has
+            // finished gliding to the left edge — `scrollLocked` releases at that
+            // moment (immediately on mobile, where there's no glide) — so the
+            // right section never crosses over the still-moving head. Once the
+            // user scrolls off the hero, fade the heading + logos out and lift
+            // them so the centred video head never sits on top of them.
+            opacity:
+              phase === "ready" && active === "hero" && heroContentIn ? 1 : 0,
+            y:
+              phase === "ready" && heroContentIn
+                ? active === "hero"
+                  ? 0
+                  : -40
+                : 24,
+          }}
+          transition={{ duration: 0.7, ease: EASE }}
           className="flex flex-col gap-16"
         >
           <h1 className="text-[clamp(38px,4.6vw,68px)] font-light leading-[1.18] tracking-[-0.01em] text-sol">
@@ -376,9 +596,15 @@ export default function Experience() {
               <div key={i} className="flex h-[62px] items-center justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={LOGOS[name]}
+                  src={LOGOS[name].light}
                   alt={name}
-                  className="max-h-[58px] w-auto max-w-[168px] object-contain"
+                  className="max-h-[58px] w-auto max-w-[168px] object-contain dark:hidden"
+                />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={LOGOS[name].dark}
+                  alt={name}
+                  className="hidden max-h-[58px] w-auto max-w-[168px] object-contain dark:block"
                 />
               </div>
             ))}
@@ -392,44 +618,58 @@ export default function Experience() {
         ref={(el) => {
           sectionRefs.current.video = el;
         }}
-        className="relative flex min-h-[100svh] snap-start items-center py-28 lg:py-24"
+        className="relative flex min-h-[100svh] snap-start snap-always items-center py-28 lg:py-24"
       >
         <div className={`${SHELL} w-full`}>
-          {!desktop && <MobileOrb line={CASES} state={orbState} />}
-          <motion.figure
-            initial={false}
-            animate={{
-              opacity: active === "video" ? 1 : 0,
-              y: active === "video" ? 0 : active === "projects" ? -90 : 60,
-            }}
-            transition={{ duration: 0.85, ease: EASE }}
-            className="relative aspect-[823/540] w-full lg:ml-auto lg:w-[min(50vw,700px)]"
-          >
-            {/* Frame + play share ONE rotation so the play tilts with the frame. */}
-            <div className="absolute inset-0 rotate-[-3.73deg]">
-              {/* Exact Figma render: rounded photo + torn white deckle border.
-                  The red offset is recreated with a red drop shadow. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/video/frame.png"
-                alt="Case studies overview"
-                className="absolute inset-0 h-full w-full object-contain drop-shadow-[6px_9px_0_rgba(233,66,69,0.28)]"
-              />
-              <button
-                type="button"
-                aria-label="Play case studies overview"
-                className="absolute bottom-[16%] right-[9%] transition hover:scale-110 focus-visible:scale-110"
-              >
+          {!desktop && (
+            <MobileOrb
+              line={CASES}
+              state={orbState}
+              screenMediaSrc={face ? VIDEO_POSTER : undefined}
+              screenMediaActive={face}
+              screenShowPlay={face}
+              onScreenActivate={() => setVideoOpen(true)}
+            />
+          )}
+          {/* Orb mode has no screen for the video, so it keeps the standalone
+              torn-photo frame; face mode plays the video inside the TV head. */}
+          {!face && (
+            <motion.figure
+              initial={false}
+              animate={{
+                opacity: active === "video" ? 1 : 0,
+                y: active === "video" ? 0 : active === "projects" ? -90 : 60,
+              }}
+              transition={{ duration: 0.85, ease: EASE }}
+              className="relative aspect-[823/540] w-full lg:ml-auto lg:w-[min(50vw,700px)]"
+            >
+              {/* Frame + play share ONE rotation so the play tilts with the frame. */}
+              <div className="absolute inset-0 rotate-[-3.73deg]">
+                {/* Exact Figma render: rounded photo + torn white deckle border.
+                    The red offset is recreated with a red drop shadow. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/video/play-icon.svg"
-                  alt=""
-                  className="h-[58px] w-auto drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
-                  aria-hidden
+                  src="/video/frame.png"
+                  alt="Case studies overview"
+                  className="absolute inset-0 h-full w-full object-contain drop-shadow-[6px_9px_0_rgba(233,66,69,0.28)]"
                 />
-              </button>
-            </div>
-          </motion.figure>
+                <button
+                  type="button"
+                  aria-label="Play case studies overview"
+                  onClick={() => setVideoOpen(true)}
+                  className="absolute bottom-[16%] right-[9%] transition hover:scale-110 focus-visible:scale-110"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/video/play-icon.svg"
+                    alt=""
+                    className="h-[58px] w-auto drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
+                    aria-hidden
+                  />
+                </button>
+              </div>
+            </motion.figure>
+          )}
         </div>
       </section>
 
@@ -439,7 +679,7 @@ export default function Experience() {
         ref={(el) => {
           sectionRefs.current.projects = el;
         }}
-        className="snap-start"
+        className="snap-start snap-always"
       >
         <Projects />
       </section>
@@ -452,7 +692,7 @@ export default function Experience() {
         ref={(el) => {
           sectionRefs.current.skills = el;
         }}
-        className="relative flex min-h-[100svh] snap-start items-center py-28 lg:py-24"
+        className="relative flex min-h-[100svh] snap-start snap-always items-center py-[67px] lg:py-[58px]"
       >
         <Skills />
       </section>
@@ -465,7 +705,7 @@ export default function Experience() {
         ref={(el) => {
           sectionRefs.current.cta = el;
         }}
-        className="relative flex min-h-[100svh] snap-start items-center py-28 lg:py-24"
+        className="relative flex min-h-[100svh] snap-start snap-always items-center py-28 lg:py-24"
       >
         <div className={`${SHELL} w-full`}>
           <div className="grid grid-cols-1 items-center gap-x-10 gap-y-10 lg:grid-cols-2">
@@ -479,20 +719,18 @@ export default function Experience() {
             <div>
         <div className="flex flex-col gap-14">
           <div className="flex flex-col gap-4 text-[clamp(26px,3vw,36px)] leading-[1.2] text-accent-2">
-            <a href="mailto:alex.barcenko@gmail.com" className="w-fit">
-              <TypeOnHover
-                text="alex.barcenko@gmail.com"
-                className="underline decoration-from-font"
-              />
-            </a>
-            <a href="tel:+351910042087" className="w-fit">
-              <TypeOnHover
-                text="+351910042087"
-                className="underline decoration-from-font"
-              />
-            </a>
+            <CopyLink
+              href="mailto:alex.barcenko@gmail.com"
+              value="alex.barcenko@gmail.com"
+              message="email copied"
+            />
+            <CopyLink
+              href="tel:+351910042087"
+              value="+351910042087"
+              message="phone copied"
+            />
           </div>
-          <div className="flex flex-col gap-10 text-[16px] font-medium text-sol">
+          <div className="flex flex-col gap-10 text-[18px] text-sol">
             <span>.based in Portugal</span>
             <a href="#" className="w-fit">
               <TypeOnHover text="{ behance }" />
@@ -506,6 +744,14 @@ export default function Experience() {
           </div>
         </div>
       </section>
+
+      <VideoModal
+        open={videoOpen}
+        onClose={() => setVideoOpen(false)}
+        videoId={VIDEO_ID}
+        start={VIDEO_START}
+        title="Case studies overview"
+      />
     </>
   );
 }
@@ -525,7 +771,7 @@ function Page({
     <section
       id={id}
       ref={refCb}
-      className="relative flex min-h-[100svh] snap-start items-center py-28 lg:py-24"
+      className="relative flex min-h-[100svh] snap-start snap-always items-center py-28 lg:py-24"
     >
       <div className={`${SHELL} w-full`}>
         <div className="grid grid-cols-1 items-center gap-x-10 gap-y-10 lg:grid-cols-2">
@@ -580,13 +826,26 @@ function ContactOrb() {
   const state: OrbState = speaking ? "replying" : "idle";
   const text = speaking ? CTA_LINE.slice(0, typed) : CTA_LINE;
 
+  // Match the hero head's size, and — like the hero — push any growth beyond the
+  // 460 cap into the left margin (shift left by half the surplus, since the head
+  // is centred in its column) so it never crowds the contact copy on its right.
+  const { w: vw } = useViewport();
+  const { mode } = useAvatarMode();
+  const face = mode === "face";
+  const size = headSize(vw, face);
+  const grow = headGrow(vw, face);
+
   return (
-    <div ref={ref} className="flex -translate-y-[78px] flex-col items-center">
-      <div className="relative aspect-square w-[min(44vw,520px)]">
-        <OrbCanvas state={state} />
+    <div
+      ref={ref}
+      className="flex flex-col items-center"
+      style={{ transform: `translate(${-grow / 2}px, -78px)` }}
+    >
+      <div className="relative aspect-square" style={{ width: size }}>
+        <Avatar state={state} />
       </div>
       <p
-        className="-mt-[88px] whitespace-pre-line text-center text-[22px] leading-8 text-sol-dim"
+        className="-mt-[8px] whitespace-pre-line text-center text-[22px] leading-8 text-sol-dim"
         style={{ width: SPEECH_W }}
       >
         {text}
@@ -596,13 +855,33 @@ function ContactOrb() {
   );
 }
 
-function MobileOrb({ line, state }: { line: string; state: OrbState }) {
+function MobileOrb({
+  line,
+  state,
+  screenMediaSrc,
+  screenMediaActive,
+  screenShowPlay,
+  onScreenActivate,
+}: {
+  line: string;
+  state: OrbState;
+  screenMediaSrc?: string;
+  screenMediaActive?: boolean;
+  screenShowPlay?: boolean;
+  onScreenActivate?: () => void;
+}) {
   return (
     <div className="mb-10 flex flex-col items-center lg:hidden">
       <div className="relative aspect-square w-[min(70vw,260px)]">
-        <OrbCanvas state={state} />
+        <Avatar
+          state={state}
+          screenMediaSrc={screenMediaSrc}
+          screenMediaActive={screenMediaActive}
+          screenShowPlay={screenShowPlay}
+          onScreenActivate={onScreenActivate}
+        />
       </div>
-      <p className="-mt-[46px] max-w-[320px] whitespace-pre-line text-center text-[20px] leading-7 text-sol-dim">
+      <p className="-mt-[3px] max-w-[320px] whitespace-pre-line text-center text-[20px] leading-7 text-sol-dim">
         {line}
       </p>
     </div>

@@ -1,15 +1,25 @@
 "use client";
 
-import { ThemeToggle } from "./ThemeToggle";
+// import { ThemeToggle } from "./ThemeToggle";
 import { TypeOnHover } from "./TypeOnHover";
 import { useActiveSection, PAGE_BG, BG_TRANSITION } from "./ActiveSection";
 
 /* Only three destinations. `match` lists the section ids that light this item
    up as the active one (hero has none → no menu item is active on the hero). */
-const NAV = [
-  { label: "work", href: "#video", match: ["video", "projects"] },
+const NAV: {
+  label: string;
+  href: string;
+  match: string[];
+  external?: boolean;
+}[] = [
+  { label: "work", href: "#projects", match: ["video", "projects"] },
   { label: "contact", href: "#cta", match: ["cta"] },
-  { label: "resume", href: "#resume", match: [] as string[] },
+  {
+    label: "resume",
+    href: "/alex-barchenko-resume.pdf",
+    match: [] as string[],
+    external: true,
+  },
 ];
 
 /* Shared page gutter — matches every section's content column. */
@@ -39,13 +49,15 @@ export function SiteHeader() {
             </span>
           </a>
           <div className="flex items-center gap-6 sm:gap-10">
-            <nav className="hidden items-center gap-10 text-[16px] font-medium sm:flex">
+            <nav className="hidden items-center gap-10 text-[18px] sm:flex">
               {NAV.map((item) => {
                 const isActive = item.match.includes(active);
                 return (
                   <a
                     key={item.label}
                     href={item.href}
+                    target={item.external ? "_blank" : undefined}
+                    rel={item.external ? "noopener noreferrer" : undefined}
                     aria-current={isActive ? "true" : undefined}
                     className={`whitespace-nowrap transition-colors hover:text-accent ${
                       isActive ? "text-accent" : "text-sol"
@@ -56,7 +68,7 @@ export function SiteHeader() {
                 );
               })}
             </nav>
-            <ThemeToggle />
+            {/* <ThemeToggle /> */}
           </div>
         </div>
       </div>

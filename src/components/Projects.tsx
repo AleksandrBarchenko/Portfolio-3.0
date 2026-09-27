@@ -3,73 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { SHELL } from "@/components/SiteHeader";
 import SideQuestModal, { HOBBIES, FAMILY, TRAVELS } from "@/components/SideQuestModal";
+import { PROJECTS, type Project } from "@/components/projects-data";
 
-type Project = {
-  image: string;
-  /* Small caps line above the title, e.g. "mobile app redesign". */
-  label: string;
-  /* Year range shown after the accent dot. */
-  period: string;
-  title: string;
-  body: string;
-  tags: string[];
-  /* Horizontal placement on wide screens — the frames stagger the cards. */
-  align: "left" | "right" | "center";
-};
-
-/* The design still carries placeholder body copy on every card. */
-const BODY =
-  "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled..";
-
-const TAGS = ["User research", "Visual design", "Analytics"];
-
-const PROJECTS: Project[] = [
-  {
-    image: "/projects/vodafone-flows.png",
-    label: "mobile app redesign",
-    period: "2021–2023",
-    title: "Increased basic flows success rate by 17% for Vodafone app",
-    body: BODY,
-    tags: TAGS,
-    align: "left",
-  },
-  {
-    image: "/projects/vodafone-userbase.png",
-    label: "mobile app redesign",
-    period: "2023–2024",
-    title: "Increased active user base by 12% for Vodafone app",
-    body: BODY,
-    tags: TAGS,
-    align: "right",
-  },
-  {
-    image: "/projects/electric-mobility.png",
-    label: "website redesign",
-    period: "2024–2025",
-    title: "Comprehensive web experience for electric mobility solutions",
-    body: BODY,
-    tags: TAGS,
-    align: "left",
-  },
-  {
-    image: "/projects/construction-saas.png",
-    label: "mobile app redesign",
-    period: "2018–2020",
-    title: "End-to-end redesign for construction SaaS",
-    body: BODY,
-    tags: TAGS,
-    align: "center",
-  },
-  {
-    image: "/projects/under-armour.png",
-    label: "mobile app & web design",
-    period: "2020–2021",
-    title: "Cognitive training app & website for Under Armour partnership",
-    body: BODY,
-    tags: TAGS,
-    align: "left",
-  },
-];
+/* Data lives in a plain module so server components (e.g. the ElioVP case
+   study) can import it too; re-exported here for existing consumers. */
+export { PROJECTS };
+export type { Project };
 
 const ALIGN: Record<Project["align"], string> = {
   left: "lg:mr-auto",
@@ -77,7 +16,7 @@ const ALIGN: Record<Project["align"], string> = {
   center: "lg:mx-auto",
 };
 
-function Card({
+export function Card({
   project,
   children,
 }: {
@@ -115,7 +54,7 @@ function Card({
             <h3 className="text-[32px] font-light leading-[1.2] text-sol">
               {project.title}
             </h3>
-            <p className="text-[16px] font-medium leading-[1.3] text-sol-dim">
+            <p className="text-[18px] leading-[1.3] text-sol-dim">
               {project.body}
             </p>
           </div>
@@ -131,7 +70,7 @@ function Card({
             ))}
           </div>
 
-          <a href="#" className="group flex items-center gap-2.5">
+          <a href={project.href ?? "#"} className="group flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/projects/arrow.svg" alt="" className="h-[34px] w-[26px]" aria-hidden />
             <span className="font-serif text-[32px] italic text-accent transition-opacity group-hover:opacity-70">
@@ -211,66 +150,70 @@ function FloatingPhoto({
   );
 }
 
-/* "Some others projects gallery" — a full-bleed horizontal strip of cut-off
-   photos at staggered heights, scrollable on narrow screens. */
-type Shot = { src: string; w: number; h: number; top: number };
-
-const GALLERY: Shot[] = [
-  { src: "/projects/gallery/1.jpg", w: 460, h: 300, top: 0 },
-  { src: "/projects/gallery/2.png", w: 362, h: 380, top: 60 },
-  { src: "/projects/gallery/3.jpg", w: 460, h: 300, top: 30 },
-  { src: "/projects/gallery/4.jpg", w: 362, h: 380, top: 0 },
-  { src: "/projects/gallery/5.jpg", w: 460, h: 300, top: 60 },
-  { src: "/projects/gallery/6.png", w: 362, h: 450, top: 30 },
+/* "Some others projects gallery" — the photos orbit on a tilted ellipse: the
+   one at the front sits large and sharp, the rest recede along the ring getting
+   smaller, dimmer and blurred the further back they travel. */
+const GALLERY: string[] = [
+  "/projects/gallery/1.png",
+  "/projects/gallery/2.png",
+  "/projects/gallery/3.png",
+  "/projects/gallery/4.png",
+  "/projects/gallery/5.png",
+  "/projects/gallery/6.png",
 ];
 
-/* Extra breathing room past the last card before the pin releases, so the end
-   of the strip never butts against the viewport edge. */
-const GALLERY_END_MARGIN = 40;
+/* Ellipse geometry, in px, relative to the ring centre. RX/RY are the half-axes
+   the cards sweep through; RY is small so the path reads as a shallow, tilted
+   ellipse rather than a full circle. */
+const RING = {
+  cardW: 620,
+  cardH: 388,
+  rx: 620,
+  ry: 95,
+  maxBlur: 18,
+};
 
-/* Desktop-only scroll-driven horizontal slider. The section is made taller than
-   the viewport; the strip sticks while that extra height scrolls past, and the
-   vertical scroll distance is mapped straight onto a horizontal translate — so
-   scrolling down walks the strip toward its last card (+ margin), then the pin
-   releases and it scrolls off screen. Scrolling back up reverses it exactly.
-   Narrow screens fall back to a plain native horizontal scroll. */
+/* Vertical scroll distance (px) mapped onto one full revolution of the ring —
+   scrolling this far past the pin start brings every photo to the front in turn
+   and lands the strip back on its first card. */
+const REVOLUTION = 1500;
+
+/* Desktop-only scroll-driven elliptical carousel. The section is taller than the
+   viewport; the ring sticks while that extra height scrolls past, and the
+   vertical scroll distance drives the rotation — scrolling down walks each photo
+   to the front, then the pin releases. Scrolling up reverses it exactly. Narrow
+   screens fall back to a plain native horizontal scroll. */
 function Gallery() {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  /* Horizontal distance the strip has to travel; 0 disables the effect (mobile,
-     reduced-motion, or a strip narrower than the viewport). */
-  const [travel, setTravel] = useState(0);
-  const [x, setX] = useState(0);
+  /* Rotation of the ring, in turns (0 = first photo front, 1 = full loop). 0
+     also disables the effect (mobile / reduced-motion → native scroll). */
+  const [turn, setTurn] = useState(0);
+  const [pinned, setPinned] = useState(false);
 
   useEffect(() => {
     const wrap = wrapRef.current;
-    const track = trackRef.current;
-    if (!wrap || !track) return;
+    if (!wrap) return;
 
     const desktop = window.matchMedia("(min-width: 1024px)");
-
-    /* How far the strip needs to slide to bring the last card fully in view.
-       This is driven entirely by page scroll (not autoplay), so it stays on for
-       reduced-motion users too — otherwise the strip falls back to a native
-       horizontal scroll that only responds while the cursor is over it. */
-    const distance = () =>
-      desktop.matches
-        ? Math.max(0, track.scrollWidth - window.innerWidth + GALLERY_END_MARGIN)
-        : 0;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const active = () => desktop.matches && !reduce.matches;
 
     let raf = 0;
     const update = () => {
       raf = 0;
-      const t = distance();
-      setTravel(t);
-      if (t === 0) {
-        setX(0);
+      const on = active();
+      setPinned(on);
+      if (!on) {
+        setTurn(0);
         return;
       }
-      /* wrap.top runs from 0 (pin starts) down to -t (pin ends); clamp to that
-         window and mirror it onto the horizontal offset. */
-      const scrolled = Math.min(Math.max(-wrap.getBoundingClientRect().top, 0), t);
-      setX(-scrolled);
+      /* wrap.top runs from 0 (pin starts) down to -REVOLUTION (pin ends); map
+         that window onto a 0→1 rotation of the ring. */
+      const scrolled = Math.min(
+        Math.max(-wrap.getBoundingClientRect().top, 0),
+        REVOLUTION,
+      );
+      setTurn(scrolled / REVOLUTION);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -280,20 +223,22 @@ function Gallery() {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", update);
     desktop.addEventListener("change", update);
+    reduce.addEventListener("change", update);
     return () => {
       if (raf) cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", update);
       desktop.removeEventListener("change", update);
+      reduce.removeEventListener("change", update);
     };
   }, []);
 
-  const pinned = travel > 0;
+  const n = GALLERY.length;
 
   return (
     <div
       ref={wrapRef}
-      style={pinned ? { height: `calc(100vh + ${travel}px)` } : undefined}
+      style={pinned ? { height: `calc(100vh + ${REVOLUTION}px)` } : undefined}
       className="mt-[120px]"
     >
       <div
@@ -309,30 +254,59 @@ function Gallery() {
           </h2>
         </div>
 
-        <div
-          className={
-            pinned
-              ? "mt-10"
-              : "mt-10 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          }
-        >
-          <div
-            ref={trackRef}
-            style={pinned ? { transform: `translate3d(${x}px,0,0)` } : undefined}
-            className="flex w-max items-start gap-[30px] px-6 will-change-transform sm:px-10 lg:px-14"
-          >
-            {GALLERY.map((shot, i) => (
-              <div
-                key={i}
-                style={{ width: shot.w, height: shot.h, marginTop: shot.top }}
-                className="shrink-0 overflow-hidden"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={shot.src} alt="" className="h-full w-full object-cover" />
-              </div>
-            ))}
+        {pinned ? (
+          <div className="relative mt-10 flex h-[520px] items-center justify-center [perspective:1600px]">
+            {GALLERY.map((src, i) => {
+              /* Angle of this card around the ring: its slot plus the scroll
+                 rotation. a = 0 is dead front. */
+              const a = (i / n - turn) * Math.PI * 2;
+              const depth = Math.cos(a); // 1 = front, -1 = fully behind
+              const norm = (depth + 1) / 2; // 0 (back) → 1 (front)
+
+              const x = Math.sin(a) * RING.rx;
+              /* Tilt the ellipse: cards to the right ride down, left ride up. */
+              const y = Math.sin(a) * RING.ry;
+              const scale = 0.5 + 0.5 * norm;
+              /* Blur ramps hard toward the back — front stays crisp, rear cards
+                 go heavily out of focus. */
+              const blur = Math.pow(1 - norm, 1.6) * RING.maxBlur;
+              const opacity = 0.3 + 0.7 * norm;
+
+              return (
+                <div
+                  key={i}
+                  style={{
+                    width: RING.cardW,
+                    height: RING.cardH,
+                    transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`,
+                    filter: `blur(${blur}px)`,
+                    opacity,
+                    zIndex: Math.round(norm * 100),
+                  }}
+                  className="absolute overflow-hidden shadow-[0_30px_60px_-20px_rgba(0,0,0,0.55)] will-change-transform"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </div>
+              );
+            })}
           </div>
-        </div>
+        ) : (
+          <div className="mt-10 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex w-max items-center gap-[30px] px-6 sm:px-10">
+              {GALLERY.map((src, i) => (
+                <div
+                  key={i}
+                  style={{ width: RING.cardW, height: RING.cardH }}
+                  className="shrink-0 overflow-hidden"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -351,7 +325,7 @@ export default function Projects() {
   const QUESTS = { hobbies: HOBBIES, family: FAMILY, travels: TRAVELS } as const;
 
   return (
-    <section className="relative pb-[68px] pt-[140px] font-sans text-sol">
+    <section className="relative pb-[41px] pt-[140px] font-sans text-sol">
       <div className={SHELL}>
         <h2 className="mb-[70px] font-serif text-[32px] italic text-accent">
           Selected works
@@ -394,6 +368,10 @@ export default function Projects() {
               onClick={() => openQuest("travels")}
             />
           </Card>
+          {/* Remaining cards carry no side-quest photo. */}
+          {PROJECTS.slice(5).map((p) => (
+            <Card key={p.title} project={p} />
+          ))}
         </div>
       </div>
 
