@@ -29,3 +29,6 @@ yarn-error.log*
 # python preprocessing venv
 /.venv-face
 __pycache__/
+
+# standalone video preprocessing sub-project (its own node_modules/build)
+/video
