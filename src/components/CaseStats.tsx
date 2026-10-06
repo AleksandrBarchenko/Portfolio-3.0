@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView, useReducedMotion } from "framer-motion";
+import { motion, useInView, useReducedMotion, useSpring } from "framer-motion";
 
 /* Headline metrics for the case studies. Borderless — each stat is a big serif
    number and label beside a small animated figure. Every figure is drawn from
@@ -41,7 +41,7 @@ export type CaseStat = {
   kind: StatKind;
 };
 
-function CountUp({
+export function CountUp({
   to,
   decimals = 0,
   play,
@@ -51,7 +51,7 @@ function CountUp({
   play: boolean;
 }) {
   const reduce = useReducedMotion();
-  const [n, setN] = useState(reduce ? to : 0);
+  const [n, setN] = useState(0);
 
   useEffect(() => {
     if (reduce) {
@@ -527,18 +527,24 @@ const PAINTERS: Record<StatKind, (f: Frame) => void> = {
 
 /* Canvas shell shared by every figure: DPR sizing, theme colours, the reveal
    timeline, and an rAF loop that only runs while on screen. */
-function Figure({
+export function Figure({
   kind,
   value,
   play,
   seed,
   className,
+  accentColor,
+  solColor,
 }: {
   kind: StatKind;
   value: number;
   play: boolean;
   seed: number;
   className: string;
+  /* Override the theme colours — used by accent-toned cards, where the figure
+     must draw in white instead of the (now invisible) accent red. */
+  accentColor?: string;
+  solColor?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const reduce = useReducedMotion();
@@ -583,8 +589,8 @@ function Figure({
       paint({
         ctx,
         size,
-        accent: css.getPropertyValue("--accent").trim() || "#e94245",
-        sol: css.getPropertyValue("--sol").trim() || "#252525",
+        accent: accentColor ?? (css.getPropertyValue("--accent").trim() || "#e94245"),
+        sol: solColor ?? (css.getPropertyValue("--sol").trim() || "#252525"),
         value,
         sweep: easeInOut(clamp01(el / SWEEP)),
         change: easeInOut(clamp01((el - SWEEP - HOLD) / CHANGE)),
@@ -601,7 +607,7 @@ function Figure({
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [kind, value, play, reduce, seed, visible]);
+  }, [kind, value, play, reduce, seed, visible, accentColor, solColor]);
 
   return (
     <canvas
@@ -612,47 +618,122 @@ function Figure({
   );
 }
 
+/* Resting tilts and a gentle vertical stagger, cycled by index, so a row of
+   cards reads as a loose collage pinned to the page rather than a rigid grid —
+   the same "floating on a table" language as the home-page works board. */
+const TILTS = [-3, 2.5, -2, 3];
+const OFFSETS = ["lg:mt-0", "lg:mt-10", "lg:mt-4", "lg:mt-12"];
+
+/* One headline metric as a floating card: a paper tile with the red-tinted
+   levitation shadow and idle bob, a resting tilt, and a 3D "push" toward the
+   cursor — lifted straight from the works-board StatCard so the case studies
+   and the home page share one vocabulary. The card is a size container: narrow,
+   the figure sits above a big serif number; wide enough (two-up rows), the
+   figure moves to the right and grows. Numbers count up on scroll-in. */
+function FloatingStat({
+  stat,
+  index,
+  play,
+}: {
+  stat: CaseStat;
+  index: number;
+  play: boolean;
+}) {
+  const tilt = useReducedMotion();
+  const rot = TILTS[index % TILTS.length];
+  // Mix accent-red tiles into the white ones — roughly one in three, matching
+  // the works board's blend of paper and accent stat cards.
+  const accent = index % 3 === 1;
+
+  const spring = { stiffness: 170, damping: 18, mass: 0.6 };
+  const rx = useSpring(0, spring);
+  const ry = useSpring(0, spring);
+  const rz = useSpring(rot, spring);
+  const s = useSpring(1, spring);
+
+  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (tilt || e.pointerType !== "mouse") return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const nx = ((e.clientX - r.left) / r.width) * 2 - 1;
+    const ny = ((e.clientY - r.top) / r.height) * 2 - 1;
+    // The point under the cursor sinks toward the table.
+    ry.set(nx * 8);
+    rx.set(-ny * 8);
+    rz.set(rot * 0.6 + nx * 2.5);
+    s.set(0.975);
+  };
+  const onLeave = () => {
+    rx.set(0);
+    ry.set(0);
+    rz.set(rot);
+    s.set(1);
+  };
+
+  return (
+    <div
+      // --u / --lift scale the levitation shadow and bob for this standalone
+      // context (off the board's container-query unit).
+      style={{ ["--u" as string]: "9px", ["--lift" as string]: 2.2 }}
+      className={`group/item @container w-full [perspective:1100px] ${OFFSETS[index % OFFSETS.length]}`}
+      onPointerMove={onMove}
+      onPointerLeave={onLeave}
+    >
+      <div
+        className="levitate"
+        style={{
+          animationDelay: `${-index * 1.37}s`,
+          animationDuration: `${6 + (index % 4) * 1.1}s`,
+        }}
+      >
+        <motion.div
+          style={{ rotateX: rx, rotateY: ry, rotateZ: rz, scale: s }}
+          className={`lev-shadow flex flex-col gap-5 rounded-[20px] p-7 sm:p-8 @[480px]:flex-row @[480px]:items-center @[480px]:justify-between @[480px]:gap-8 @[480px]:p-10 ${
+            accent
+              ? "bg-accent text-white"
+              : "bg-paper outline outline-1 outline-black/[0.04] dark:outline-white/[0.06]"
+          }`}
+        >
+          <Figure
+            kind={stat.kind}
+            value={stat.value}
+            play={play}
+            seed={index * 1.3}
+            className="w-[60px] sm:w-[72px] @[480px]:order-last @[480px]:w-[150px] @[600px]:w-[190px]"
+            accentColor={accent ? "#ffffff" : undefined}
+            solColor={accent ? "#ffffff" : undefined}
+          />
+          <div className="flex flex-col gap-2">
+            <div
+              className={`whitespace-nowrap font-serif text-[clamp(44px,5.5vw,72px)] font-light leading-none ${accent ? "" : "text-accent"}`}
+            >
+              {stat.prefix}
+              <CountUp to={stat.value} decimals={stat.decimals} play={play} />
+              {stat.suffix}
+            </div>
+            <p className={`text-[16px] leading-[1.4] ${accent ? "text-white/85" : "text-sol-dim"}`}>
+              {stat.label}
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 export function CaseStats({ stats }: { stats: CaseStat[] }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, amount: 0.3 });
-  // Three stats sit in one row with the figure stacked above the number; two
-  // or four sit two-up with the figure beside it.
-  const three = stats.length === 3;
+  // Cards float two-up on small screens; three or four stats open out to their
+  // own column on wide ones.
+  const cols = stats.length >= 4 ? "lg:grid-cols-4" : stats.length === 3 ? "lg:grid-cols-3" : "";
 
   return (
     <div
       ref={ref}
-      className={`grid grid-cols-1 gap-x-16 gap-y-16 sm:grid-cols-2 ${three ? "lg:grid-cols-3" : ""}`}
+      className={`grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 ${cols}`}
     >
       {stats.map((s, i) => (
-        <div
-          key={s.label}
-          className={
-            three
-              ? "flex flex-col gap-8"
-              : "flex items-center justify-between gap-8"
-          }
-        >
-          <div className={`flex flex-col gap-2 ${three ? "order-2" : ""}`}>
-            <div className="font-serif text-[clamp(52px,7vw,88px)] font-light leading-none text-accent">
-              {s.prefix}
-              <CountUp to={s.value} decimals={s.decimals} play={inView} />
-              {s.suffix}
-            </div>
-            <p className="text-[18px] leading-[1.6] text-sol-dim">{s.label}</p>
-          </div>
-          <Figure
-            kind={s.kind}
-            value={s.value}
-            play={inView}
-            seed={i * 1.3}
-            className={
-              three
-                ? "w-[112px] sm:w-[140px]"
-                : "w-[112px] sm:w-[140px] lg:w-[180px]"
-            }
-          />
-        </div>
+        <FloatingStat key={s.label} stat={s} index={i} play={inView} />
       ))}
     </div>
   );

@@ -87,6 +87,22 @@ body {
   }
 }
 
+/* Case-study pages: the page and its sticky header share one background that
+   eases between sections exactly like the home page backdrop (same 700ms
+   ease-in-out as BG_TRANSITION). A section sets --case-bg on <html> while it
+   owns the viewport centre — see OtherProjects. */
+.case-bg {
+  background-color: var(--case-bg, var(--paper));
+  transition:
+    background-color 0.7s ease-in-out,
+    color 0.35s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .case-bg {
+    transition: none;
+  }
+}
+
 /* Paged feel: one scroll = one full-viewport page. The projects list adds its
    own per-card snap points so the tall section never traps the scroll. */
 html {
@@ -124,4 +140,63 @@ html {
 
 .animate-marquee {
   animation: marquee 28s linear infinite;
+}
+
+/* Case studies open as the short version: every section tagged data-detail
+   stays folded away until the StorySwitch sets data-full on <html>. Hidden by
+   default in CSS (not by script) so the page never flashes the long version. */
+html:not([data-full]) [data-detail] {
+  display: none;
+}
+/* …and the short version's own summary (data-short) steps aside once it is. */
+html[data-full] [data-short] {
+  display: none;
+}
+
+/* Works board (layout 2): every item idles in a slow levitating bob — uses the
+   standalone `translate` property so it composes with the hover tilt's
+   transform — and casts a red-tinted shadow scaled by its depth (--lift, set
+   per item). Hovering "pushes" the card toward the table: the shadow tightens. */
+@keyframes levitate {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 calc(var(--u, 8px) * -0.9);
+  }
+}
+.levitate {
+  animation: levitate 7s ease-in-out infinite;
+}
+
+/* 404: the sad TV's caption slides in each time it's poked for a new quip. */
+@keyframes quip-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@layer components {
+  .lev-shadow {
+    --press: 1;
+    box-shadow:
+      0 calc(var(--u, 8px) * var(--lift, 2) * var(--press) * 1.2)
+        calc(var(--u, 8px) * var(--lift, 2) * var(--press) * 2.6)
+        calc(var(--u, 8px) * -1) rgb(233 66 69 / 0.16),
+      0 calc(var(--u, 8px) * 0.25) calc(var(--u, 8px) * 0.7) rgb(0 0 0 / 0.06);
+    transition: box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  [data-item]:hover .lev-shadow {
+    --press: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .levitate {
+    animation: none;
+  }
 }

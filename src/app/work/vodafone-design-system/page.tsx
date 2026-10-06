@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { SHELL } from "@/components/SiteHeader";
+import Link from "next/link";
+import { SHELL } from "@/components/shell";
+import { CaseHeader } from "@/components/CaseHeader";
+import { StorySwitch } from "@/components/StorySwitch";
+import { CaseSummary, type SummaryItem } from "@/components/CaseSummary";
 import { ContactSection } from "@/components/ContactSection";
-import { Card } from "@/components/Projects";
-import { PROJECTS } from "@/components/projects-data";
+import { OtherProjects } from "@/components/WorksBoard";
 import { CaseStats, type CaseStat } from "@/components/CaseStats";
 
 export const metadata: Metadata = {
@@ -112,38 +115,34 @@ const CHALLENGES = [
   },
 ];
 
-/* Other projects — the full home-page list (minus this case study itself),
-   shown before the contact block so the study leads the reader onward
-   instead of dead-ending. */
-const OTHER_PROJECTS = PROJECTS.filter(
-  (p) => p.href !== "/work/vodafone-design-system",
-);
+/* "What was done" for the short version — one line per challenge. */
+const SUMMARY: SummaryItem[] = [
+  {
+    title: "Unify the components and eliminate redundancies",
+    done: "A parent constructor component for every element — flexible parameters with consistent sizes, spacing and styles.",
+    target: "challenge-1",
+  },
+  {
+    title: "Speed up the process and communication",
+    done: "Shared naming between design and development, and a synced colour system with clear usage rules.",
+    target: "challenge-2",
+  },
+  {
+    title: "Develop clear and user-friendly documentation",
+    done: "Guidelines for building and using each component, instead of usage living in designers' heads.",
+    target: "challenge-3",
+  },
+  {
+    title: "Create a Vodafone ecosystem for cross-platform use",
+    done: "Scaled the system to other platforms and Vodafone Ukraine teams, synced with development through Storybook.",
+    target: "challenge-4",
+  },
+];
 
 export default function VodafoneDesignSystemCaseStudy() {
   return (
-    <main className="theme-fade min-h-screen bg-paper font-sans text-sol">
-      {/* Lightweight case-study header — wordmark home link, back-to-work. */}
-      <header className="sticky top-0 z-40 bg-paper theme-fade">
-        <div className={SHELL}>
-          <div className="flex items-center justify-between py-5">
-            <a href="/" className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logos/logo.svg" alt="" className="h-10 w-10" aria-hidden />
-              <span className="font-serif text-[20px] font-medium tracking-tight text-sol">
-                a.barchenko
-              </span>
-            </a>
-            <div className="flex items-center gap-6 sm:gap-10">
-              <a
-                href="/#projects"
-                className={`whitespace-nowrap ${T.body} text-sol transition-colors hover:text-accent`}
-              >
-                [ back to work ]
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+    <main className="case-bg min-h-screen font-sans text-sol">
+      <CaseHeader />
 
       {/* Hero — label row, title, overview, spec strip. */}
       <section className="pt-[70px] pb-[80px]">
@@ -200,14 +199,6 @@ export default function VodafoneDesignSystemCaseStudy() {
         </div>
       </section>
 
-      {/* Improvements — headline metrics, shown before the role/process intro
-          so the outcomes lead. Animated reduction bars (client component). */}
-      <section className="pb-[100px]">
-        <div className={SHELL}>
-          <CaseStats stats={IMPROVEMENTS} />
-        </div>
-      </section>
-
       {/* Role / Challenges / Process — label-left intro rows. */}
       <section className="pb-[100px]">
         <div className={SHELL}>
@@ -235,8 +226,22 @@ export default function VodafoneDesignSystemCaseStudy() {
         </div>
       </section>
 
-      {/* Why rebuild. */}
+      {/* Improvements — headline metrics, shown after the role/process intro
+          so the outcomes lead. Animated reduction bars (client component). */}
       <section className="pb-[100px]">
+        <div className={SHELL}>
+          <CaseStats stats={IMPROVEMENTS} />
+        </div>
+      </section>
+
+      {/* What was done — the short version's summary of the work. */}
+      <CaseSummary items={SUMMARY} />
+
+      {/* The fold — short version above, the full story opens below. */}
+      <StorySwitch />
+
+      {/* Why rebuild. */}
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>Why Rebuild</h2>
@@ -272,11 +277,11 @@ export default function VodafoneDesignSystemCaseStudy() {
       </section>
 
       {/* Challenges — numbered, each with its delivered work. */}
-      <section className="pb-[100px]">
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="flex flex-col gap-[110px]">
             {CHALLENGES.map((c) => (
-              <div key={c.n}>
+              <div key={c.n} id={c.n.toLowerCase().replace(" ", "-")}>
                 <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
                   <div className="flex flex-col gap-3">
                     <span className={`${T.label} text-accent`}>{c.n}</span>
@@ -309,9 +314,9 @@ export default function VodafoneDesignSystemCaseStudy() {
 
       {/* App redesign cross-link — mirrors the design-system card on the
           Vodafone app study, pointing back to where the system is used. */}
-      <section className="pb-[120px]">
+      <section data-detail className="pb-[120px]">
         <div className={SHELL}>
-          <a
+          <Link
             href="/work/vodafone"
             className="group grid grid-cols-1 gap-8 rounded-[24px] border border-sol/15 p-8 transition-colors duration-300 ease-out hover:border-accent/50 sm:grid-cols-2 sm:items-start sm:gap-16 sm:p-12"
           >
@@ -349,21 +354,14 @@ export default function VodafoneDesignSystemCaseStudy() {
                 </svg>
               </span>
             </div>
-          </a>
+          </Link>
         </div>
       </section>
 
-      {/* Other projects — sits on the surface-2 panel, matching the home page's
-          video section background. */}
-      <section className="bg-surface-2 pt-[100px] pb-[120px]">
-        <div className={SHELL}>
-          <h2 className={`mb-[70px] ${T.section}`}>Other projects</h2>
-          <div className="flex flex-col gap-[140px]">
-            {OTHER_PROJECTS.map((p) => (
-              <Card key={p.title} project={p} />
-            ))}
-          </div>
-        </div>
+      {/* Other projects — the home page's side-scrolling board, cases and
+          stats only (this case left out). */}
+      <section>
+        <OtherProjects exclude="/work/vodafone-design-system" />
       </section>
 
       {/* Contact — the same final block as the home page. */}
@@ -372,9 +370,9 @@ export default function VodafoneDesignSystemCaseStudy() {
       {/* Footer. */}
       <footer className="border-t border-line py-8">
         <div className={`${SHELL} flex items-center justify-between ${T.label} text-sol-dim`}>
-          <a href="/" className="transition-colors hover:text-accent">
+          <Link href="/" className="transition-colors hover:text-accent">
             Home
-          </a>
+          </Link>
           <span>© 2025</span>
         </div>
       </footer>

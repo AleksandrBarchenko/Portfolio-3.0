@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Onest, Orbitron, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { SoundProvider } from "@/components/sound/SoundProvider";
 
 const onest = Onest({
   subsets: ["latin"],
@@ -32,9 +33,17 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  // Absolute base for the share-preview image URLs. Swap for the custom domain
+  // once there is one.
+  metadataBase: new URL("https://portfolio30-aleksandrbarcenko-5456s-projects.vercel.app"),
   title: "a.barchenko — digital product designer",
   description:
     "Portfolio of Alex Barchenko, digital product designer. Creating feelings and making your business grow.",
+  // No title/description here on purpose: previews fall back to each page's
+  // own <title> and description, so case-study links read as that case. The
+  // image comes from app/opengraph-image.tsx and is shared by every route.
+  openGraph: { siteName: "a.barchenko", type: "website", locale: "en_US" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({
@@ -55,7 +64,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <SoundProvider>{children}</SoundProvider>
+      </body>
     </html>
   );
 }

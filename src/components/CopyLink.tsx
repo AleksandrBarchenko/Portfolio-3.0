@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { TypeOnHover } from "@/components/TypeOnHover";
+import { useSound } from "@/components/sound/SoundProvider";
+import { CUE } from "@/components/sound/sound-events";
 
 const SHOW_MS = 1800;
 
@@ -14,13 +16,17 @@ export function CopyLink({
   href,
   value,
   message,
+  onCopy,
 }: {
   href: string;
   value: string;
   message: string;
+  /* Fired after a successful copy (the contact orb reacts to it). */
+  onCopy?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { play } = useSound();
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
@@ -37,6 +43,9 @@ export function CopyLink({
       return;
     }
     setCopied(true);
+    // Sound only after the write actually resolved — the real outcome.
+    play(CUE.copy);
+    onCopy?.();
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(false), SHOW_MS);
   };

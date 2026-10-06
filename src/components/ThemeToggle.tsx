@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSound } from "@/components/sound/SoundProvider";
+import { themeCue } from "@/components/sound/sound-events";
 
 type Theme = "light" | "dark";
 
@@ -13,6 +15,7 @@ function currentTheme(): Theme {
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("light");
+  const { play } = useSound();
 
   // Sync to whatever the boot script set once we're on the client.
   useEffect(() => setTheme(currentTheme()), []);
@@ -20,6 +23,8 @@ export function ThemeToggle() {
   const toggle = () => {
     const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
+    // Cue chosen from the state we're landing in.
+    play(themeCue(next === "dark"));
     document.documentElement.dataset.theme = next;
     try {
       localStorage.setItem("theme", next);

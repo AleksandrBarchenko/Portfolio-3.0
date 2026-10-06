@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { SHELL } from "@/components/SiteHeader";
+import Link from "next/link";
+import { SHELL } from "@/components/shell";
+import { CaseHeader } from "@/components/CaseHeader";
+import { StorySwitch } from "@/components/StorySwitch";
+import { CaseSummary, type SummaryItem } from "@/components/CaseSummary";
 import { ContactSection } from "@/components/ContactSection";
-import { Card } from "@/components/Projects";
-import { PROJECTS } from "@/components/projects-data";
+import { OtherProjects } from "@/components/WorksBoard";
 import { CaseStats, type CaseStat } from "@/components/CaseStats";
 
 export const metadata: Metadata = {
@@ -58,7 +61,6 @@ const INFO = [
 const IMPROVEMENTS: CaseStat[] = [
   { value: 20, suffix: "+", label: "Functionalities created", kind: "count" },
   { value: 2, label: "Product parts — B2B and B2C", kind: "split" },
-  { value: 2, label: "Key personas defined", kind: "pair" },
 ];
 
 /* The extra functionalities delivered across the long-term project. */
@@ -97,36 +99,29 @@ const LESSONS = [
   { title: "Don't reinvent the wheel", body: "Use things that already work well." },
 ];
 
-/* Other projects — the full home-page list (minus this case study itself),
-   shown before the contact block so the study leads the reader onward
-   instead of dead-ending. */
-const OTHER_PROJECTS = PROJECTS.filter((p) => p.href !== "/work/zimaone");
+/* "What was done" for the short version — one line per challenge. */
+const SUMMARY: SummaryItem[] = [
+  {
+    title: "Understand start points and user needs",
+    done: "Defined the navigation from the existing web version, cut an MVP-0 feature set for mobile and identified two key personas.",
+    target: "before-design",
+  },
+  {
+    title: "Clarify roles through the “Observation” flow",
+    done: "Mapped how roles interact, then shipped issue tracking with statuses, photo, video and audio notes, map locations, deadlines and assignees.",
+    target: "design-process",
+  },
+  {
+    title: "Ship the core mobile toolset",
+    done: "Chat, file manager, inspections, milestones and leave & absence.",
+    target: "more",
+  },
+];
 
 export default function ZimaOneCaseStudy() {
   return (
-    <main className="theme-fade min-h-screen bg-paper font-sans text-sol">
-      {/* Lightweight case-study header — wordmark home link, back-to-work. */}
-      <header className="sticky top-0 z-40 bg-paper theme-fade">
-        <div className={SHELL}>
-          <div className="flex items-center justify-between py-5">
-            <a href="/" className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logos/logo.svg" alt="" className="h-10 w-10" aria-hidden />
-              <span className="font-serif text-[20px] font-medium tracking-tight text-sol">
-                a.barchenko
-              </span>
-            </a>
-            <div className="flex items-center gap-6 sm:gap-10">
-              <a
-                href="/#projects"
-                className={`whitespace-nowrap ${T.body} text-sol transition-colors hover:text-accent`}
-              >
-                [ back to work ]
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+    <main className="case-bg min-h-screen font-sans text-sol">
+      <CaseHeader />
 
       {/* Hero — label row, title, overview, spec strip. */}
       <section className="pt-[70px] pb-[80px]">
@@ -184,14 +179,6 @@ export default function ZimaOneCaseStudy() {
         </div>
       </section>
 
-      {/* Headline numbers with their animated figures (title intentionally
-          omitted). */}
-      <section className="pb-[100px]">
-        <div className={SHELL}>
-          <CaseStats stats={IMPROVEMENTS} />
-        </div>
-      </section>
-
       {/* Team / Responsibilities / Achievements — label-left intro rows. */}
       <section className="pb-[100px]">
         <div className={SHELL}>
@@ -219,8 +206,22 @@ export default function ZimaOneCaseStudy() {
         </div>
       </section>
 
-      {/* Mobile app goals. */}
+      {/* Headline numbers with their animated figures (title intentionally
+          omitted). */}
       <section className="pb-[100px]">
+        <div className={SHELL}>
+          <CaseStats stats={IMPROVEMENTS} />
+        </div>
+      </section>
+
+      {/* What was done — the short version's summary of the work. */}
+      <CaseSummary items={SUMMARY} />
+
+      {/* The fold — short version above, the full story opens below. */}
+      <StorySwitch />
+
+      {/* Mobile app goals. */}
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>Mobile App Goals</h2>
@@ -235,7 +236,7 @@ export default function ZimaOneCaseStudy() {
       </section>
 
       {/* Before design — navigation structure + personas. */}
-      <section className="pb-[100px]">
+      <section id="before-design" data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <div className="flex flex-col gap-3">
@@ -271,7 +272,7 @@ export default function ZimaOneCaseStudy() {
       </section>
 
       {/* Design process — the "Observation" functionality end to end. */}
-      <section className="pb-[100px]">
+      <section id="design-process" data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <div className="flex flex-col gap-3">
@@ -328,7 +329,7 @@ export default function ZimaOneCaseStudy() {
       </section>
 
       {/* A few more functionalities — same zig-zag as the Vodafone study. */}
-      <section className="pb-[100px]">
+      <section id="more" data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>Also a few more functionalities</h2>
@@ -368,7 +369,7 @@ export default function ZimaOneCaseStudy() {
       </section>
 
       {/* What I would do differently — short retrospective. */}
-      <section className="pb-[100px]">
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>What I would do differently</h2>
@@ -392,7 +393,7 @@ export default function ZimaOneCaseStudy() {
       </section>
 
       {/* Thankful for this experience — closing note + team photo. */}
-      <section className="pb-[120px]">
+      <section data-detail className="pb-[120px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>Thankful for this experience</h2>
@@ -415,17 +416,10 @@ export default function ZimaOneCaseStudy() {
         </div>
       </section>
 
-      {/* Other projects — sits on the surface-2 panel, matching the home page's
-          video section background. */}
-      <section className="bg-surface-2 pt-[100px] pb-[120px]">
-        <div className={SHELL}>
-          <h2 className={`mb-[70px] ${T.section}`}>Other projects</h2>
-          <div className="flex flex-col gap-[140px]">
-            {OTHER_PROJECTS.map((p) => (
-              <Card key={p.title} project={p} />
-            ))}
-          </div>
-        </div>
+      {/* Other projects — the home page's side-scrolling board, cases and
+          stats only (this case left out). */}
+      <section>
+        <OtherProjects exclude="/work/zimaone" />
       </section>
 
       {/* Contact — the same final block as the home page. */}
@@ -434,9 +428,9 @@ export default function ZimaOneCaseStudy() {
       {/* Footer. */}
       <footer className="border-t border-line py-8">
         <div className={`${SHELL} flex items-center justify-between ${T.label} text-sol-dim`}>
-          <a href="/" className="transition-colors hover:text-accent">
+          <Link href="/" className="transition-colors hover:text-accent">
             Home
-          </a>
+          </Link>
           <span>© 2025</span>
         </div>
       </footer>

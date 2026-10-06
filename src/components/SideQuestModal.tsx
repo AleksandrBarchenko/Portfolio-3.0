@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Avatar } from "@/components/Avatar";
+import { useOpenCloseSound } from "@/components/sound/SoundProvider";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -136,6 +137,8 @@ export default function SideQuestModal({
 }) {
   const reduce = useReducedMotion();
   const blurb = quest.blurb;
+  // One cue when the side-quest panel opens, one when it closes.
+  useOpenCloseSound(open);
 
   // Type the blurb out each time the modal opens (skip if reduced motion).
   const [typed, setTyped] = useState(0);
@@ -208,7 +211,7 @@ export default function SideQuestModal({
           {/* Panel — translucent surface with a background blur, per the design
               (flips with the theme via the --panel token). */}
           <motion.div
-            className="relative flex h-full max-h-[820px] w-full max-w-[1440px] items-center justify-center overflow-hidden rounded-3xl bg-white/50 font-sans text-sol shadow-2xl backdrop-blur-xl lg:h-[80vh] lg:max-h-[80vh] lg:w-[80vw] lg:max-w-[80vw]"
+            className="relative flex h-full max-h-[820px] w-full max-w-[1440px] items-center justify-center overflow-hidden rounded-3xl bg-white/30 font-sans text-sol shadow-2xl backdrop-blur-xl lg:h-[80vh] lg:max-h-[80vh] lg:w-[80vw] lg:max-w-[80vw]"
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}

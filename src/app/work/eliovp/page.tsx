@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { SHELL } from "@/components/SiteHeader";
+import Link from "next/link";
+import { SHELL } from "@/components/shell";
+import { CaseHeader } from "@/components/CaseHeader";
 import { ContactSection } from "@/components/ContactSection";
-import { Card } from "@/components/Projects";
-import { PROJECTS } from "@/components/projects-data";
+import { OtherProjects } from "@/components/WorksBoard";
 
 export const metadata: Metadata = {
   title: "ElioVP — comprehensive web experience · a.barchenko",
@@ -41,38 +42,10 @@ const DESIGNS = [
   "/projects/eliovp/design-10.png",
 ];
 
-/* Other projects — the full home-page list (minus this case study itself),
-   shown before the contact block so the study leads the reader onward
-   instead of dead-ending. */
-const OTHER_PROJECTS = PROJECTS.filter((p) => p.href !== "/work/eliovp");
-
 export default function EliovpCaseStudy() {
   return (
-    <main className="theme-fade min-h-screen bg-paper font-sans text-sol">
-      {/* Lightweight case-study header — wordmark home link, back-to-work, theme
-          toggle. Solid paper fill so it blends into the page like the site bar. */}
-      <header className="sticky top-0 z-40 bg-paper theme-fade">
-        <div className={SHELL}>
-          <div className="flex items-center justify-between py-5">
-            <a href="/" className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logos/logo.svg" alt="" className="h-10 w-10" aria-hidden />
-              <span className="font-serif text-[20px] font-medium tracking-tight text-sol">
-                a.barchenko
-              </span>
-            </a>
-            <div className="flex items-center gap-6 sm:gap-10">
-              <a
-                href="/#projects"
-                className="whitespace-nowrap text-[18px] text-sol transition-colors hover:text-accent"
-              >
-                [ back to work ]
-              </a>
-              {/* <ThemeToggle /> */}
-            </div>
-          </div>
-        </div>
-      </header>
+    <main className="case-bg min-h-screen font-sans text-sol">
+      <CaseHeader />
 
       {/* Hero — label row, title, meta grid, company blurb. */}
       <section className="pt-[70px] pb-[80px]">
@@ -168,18 +141,10 @@ export default function EliovpCaseStudy() {
         </div>
       </section>
 
-      {/* Other projects — two more selected works before the contact block. */}
-      <section className="border-t border-line pt-[100px] pb-[120px]">
-        <div className={SHELL}>
-          <h2 className="mb-[70px] font-serif text-[32px] italic text-accent">
-            Other projects
-          </h2>
-          <div className="flex flex-col gap-[140px]">
-            {OTHER_PROJECTS.map((p) => (
-              <Card key={p.title} project={p} />
-            ))}
-          </div>
-        </div>
+      {/* Other projects — the home page's side-scrolling board, cases and
+          stats only (this case left out). */}
+      <section>
+        <OtherProjects exclude="/work/eliovp" />
       </section>
 
       {/* Contact — the same final block as the home page. */}
@@ -188,9 +153,9 @@ export default function EliovpCaseStudy() {
       {/* Footer. */}
       <footer className="border-t border-line py-8">
         <div className={`${SHELL} flex items-center justify-between text-[14px] text-sol-dim`}>
-          <a href="/" className="transition-colors hover:text-accent">
+          <Link href="/" className="transition-colors hover:text-accent">
             Home
-          </a>
+          </Link>
           <span>© 2025</span>
         </div>
       </footer>

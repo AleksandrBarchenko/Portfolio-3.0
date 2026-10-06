@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { SHELL } from "@/components/SiteHeader";
+import { LAST_CASE_KEY, WORKS_LAYOUT_KEY } from "@/components/nav-memory";
+import WorksBoard from "@/components/WorksBoard";
+import { FloatingPhoto } from "@/components/FloatingPhoto";
 import SideQuestModal, { HOBBIES, FAMILY, TRAVELS } from "@/components/SideQuestModal";
 import { PROJECTS, type Project } from "@/components/projects-data";
+import { useSound } from "@/components/sound/SoundProvider";
+import { CUE } from "@/components/sound/sound-events";
 
 /* Data lives in a plain module so server components (e.g. the ElioVP case
    study) can import it too; re-exported here for existing consumers. */
@@ -25,9 +31,34 @@ export function Card({
      margin left by this card's stagger. */
   children?: React.ReactNode;
 }) {
+  const imgRef = useRef<HTMLDivElement>(null);
+  const { play, playShift } = useSound();
+  const href = project.href ?? "#";
+
+  /* The whole card is one link (a stretched ::after on "View use case"), so the
+     pointer is tracked on the article and the "view case" pill follows it only
+     while it's over the image. Written straight to CSS vars — no re-renders. */
+  const onPointerMove = (e: React.PointerEvent) => {
+    const el = imgRef.current;
+    if (!el || e.pointerType !== "mouse") return;
+    const r = el.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    el.style.setProperty("--x", `${x}px`);
+    el.style.setProperty("--y", `${y}px`);
+    el.dataset.over = String(x >= 0 && y >= 0 && x <= r.width && y <= r.height);
+  };
+  const onPointerLeave = () => {
+    if (imgRef.current) imgRef.current.dataset.over = "false";
+  };
+
   return (
     <article
-      className={`relative flex w-full max-w-[950px] flex-col gap-4 ${ALIGN[project.align]}`}
+      data-case={href}
+      onPointerEnter={playShift}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+      className={`group/card relative flex w-full max-w-[950px] flex-col gap-4 ${ALIGN[project.align]}`}
     >
       {children}
       {/* label row */}
@@ -39,13 +70,25 @@ export function Card({
 
       <div className="flex flex-col gap-[30px] lg:flex-row lg:items-center">
         {/* project image */}
-        <div className="relative aspect-[460/334] w-full shrink-0 lg:w-[460px]">
+        <div
+          ref={imgRef}
+          data-over="false"
+          className="group/img relative aspect-[460/334] w-full shrink-0 overflow-hidden lg:w-[460px]"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={project.image}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:group-hover/card:scale-[1.04]"
           />
+          {/* Cursor-following "view case" pill (mouse only). */}
+          <span
+            aria-hidden
+            style={{ left: "var(--x, 50%)", top: "var(--y, 50%)" }}
+            className="pointer-events-none absolute z-10 hidden -translate-x-1/2 -translate-y-1/2 scale-75 items-center gap-1.5 whitespace-nowrap rounded-full bg-paper/95 px-4 py-2 font-serif text-[18px] italic text-accent opacity-0 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.25)] transition-[opacity,scale] duration-200 ease-out group-data-[over=true]/img:scale-100 group-data-[over=true]/img:opacity-100 [@media(hover:hover)]:flex"
+          >
+            view case <span className="not-italic">→</span>
+          </span>
         </div>
 
         {/* copy */}
@@ -70,83 +113,33 @@ export function Card({
             ))}
           </div>
 
-          <a href={project.href ?? "#"} className="group flex items-center gap-2.5">
+          {/* Stretched link: its ::after covers the whole article, so the image,
+              title and copy are all clickable. Side-quest photos sit above it
+              (z-10) and keep their own click. */}
+          <Link
+            href={href}
+            aria-label={`View use case: ${project.title}`}
+            onClick={() => {
+              // Moving forward into the case study.
+              play(CUE.enterCase);
+              sessionStorage.setItem(LAST_CASE_KEY, href);
+            }}
+            className="flex w-fit items-center gap-2.5 after:absolute after:inset-0 after:content-['']"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/projects/arrow.svg" alt="" className="h-[34px] w-[26px]" aria-hidden />
-            <span className="font-serif text-[32px] italic text-accent transition-opacity group-hover:opacity-70">
+            <img
+              src="/projects/arrow.svg"
+              alt=""
+              className="h-[34px] w-[26px] transition-transform duration-300 ease-out motion-safe:group-hover/card:translate-x-1.5"
+              aria-hidden
+            />
+            <span className="font-serif text-[32px] italic text-accent transition-opacity group-hover/card:opacity-70">
               View use case
             </span>
-          </a>
+          </Link>
         </div>
       </div>
     </article>
-  );
-}
-
-/* Floating cut-out photo that opens a "side quest". It does NOT sit in the card
-   flow — it's absolutely positioned (via `pos`) into the empty margin a card's
-   stagger leaves beside it, so it hangs off the card's side and never disturbs
-   the 140px rhythm between cards. Desktop-only (needs the side margin).
-
-   Two layers, exactly like the frame: the clipped photo, and a stroke overlay
-   carrying the torn-paper white edge + grain, inset -7% so it rings the photo.
-   CSS handles the resting tilt, the red-tinted drop shadow, and the hover that
-   straightens + grows it and tints the photo shape with accent. */
-function FloatingPhoto({
-  photo,
-  stroke,
-  pos,
-  rotate,
-  scale = 1,
-  ariaLabel,
-  onClick,
-}: {
-  photo: string;
-  stroke: string;
-  /* Absolute-position utilities anchoring the 120px box to the card edge. */
-  pos: string;
-  rotate: number;
-  /* Visual size only. Denser shapes are scaled down so their mass keeps the
-     same breathing room from the card as the airier ones. */
-  scale?: number;
-  ariaLabel: string;
-  /* Opens the "side quest" modal. */
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={ariaLabel}
-      style={
-        { "--rot": `${rotate}deg`, "--scale": `${scale}` } as React.CSSProperties
-      }
-      className={`group absolute z-10 hidden h-[120px] w-[120px] cursor-pointer [transform:rotate(var(--rot))_scale(var(--scale))] drop-shadow-[0_8px_12px_rgba(255,0,0,0.15)] transition-[transform,filter] duration-300 ease-out hover:[transform:rotate(0deg)_scale(calc(var(--scale)*1.12))] hover:drop-shadow-[0px_2px_1px_rgba(255,0,0,0.25)] xl:block ${pos}`}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={photo} alt="" className="absolute inset-0 h-full w-full object-contain" />
-      {/* 10% accent overlay, masked to the photo's torn shape so only the
-          photo (not its transparent edges) gets tinted on hover */}
-      <div
-        aria-hidden
-        style={{
-          WebkitMaskImage: `url(${photo})`,
-          maskImage: `url(${photo})`,
-          WebkitMaskSize: "contain",
-          maskSize: "contain",
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskPosition: "center",
-          maskPosition: "center",
-        }}
-        className="pointer-events-none absolute inset-0 bg-accent opacity-0 transition-opacity duration-300 group-hover:opacity-10"
-      />
-      {/* torn-paper white edge + grain, ringing the photo */}
-      <div className="absolute inset-[-7%]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={stroke} alt="" className="h-full w-full" />
-      </div>
-    </button>
   );
 }
 
@@ -312,6 +305,65 @@ function Gallery() {
   );
 }
 
+type Layout = "list" | "board";
+
+/* `hidden` drops a layout from the tabs (and from the restored choice) while
+   keeping its code around — flip it back to compare again. With one layout
+   left the switcher hides entirely and the board (the default) shows. */
+const LAYOUTS: { id: Layout; n: string; label: string; hidden?: boolean }[] = [
+  { id: "list", n: "01", label: "list", hidden: true },
+  { id: "board", n: "02", label: "board" },
+];
+const VISIBLE = LAYOUTS.filter((l) => !l.hidden);
+
+/* "Works and Life" title + the layout tabs used to compare the two designs. */
+function WorksHeading({
+  layout,
+  onLayout,
+  className = "",
+}: {
+  layout: Layout;
+  onLayout: (l: Layout) => void;
+  className?: string;
+}) {
+  const { playHover } = useSound();
+  return (
+    <div className={`${SHELL} flex items-center justify-between gap-6 ${className}`}>
+      <h2 className="whitespace-nowrap font-serif text-[26px] italic text-accent sm:text-[32px]">Works and Life</h2>
+      {/* A single remaining layout needs no switcher. */}
+      {VISIBLE.length > 1 && (
+        <div
+          role="tablist"
+          aria-label="Works layout"
+          className="flex items-center gap-1 rounded-full bg-pill p-1"
+        >
+          {VISIBLE.map((l) => {
+            const on = l.id === layout;
+            return (
+              <button
+                key={l.id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onPointerEnter={() => playHover()}
+                onClick={() => onLayout(l.id)}
+                className={`flex items-baseline gap-1.5 rounded-full px-4 py-1.5 text-[14px] transition-[background-color,color,box-shadow] duration-300 ${
+                  on
+                    ? "bg-paper text-accent shadow-[0_4px_14px_-6px_rgba(0,0,0,0.25)]"
+                    : "text-sol-dim hover:text-sol"
+                }`}
+              >
+                <span className="font-mono text-[11px] opacity-60">{l.n}</span>
+                <span className="font-serif italic">{l.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Projects() {
   /* One shared modal drives the side quests. `open` toggles it; `quest` keeps
      the last-shown content so it stays put through the close animation. */
@@ -324,21 +376,54 @@ export default function Projects() {
 
   const QUESTS = { hobbies: HOBBIES, family: FAMILY, travels: TRAVELS } as const;
 
+  /* Layout under comparison — restored after hydration so SSR stays stable. */
+  const [layout, setLayout] = useState<Layout>("board");
+  useEffect(() => {
+    const saved = localStorage.getItem(WORKS_LAYOUT_KEY);
+    const restore = VISIBLE.find((l) => l.id === saved);
+    if (restore) setLayout(restore.id);
+  }, []);
+  const switchLayout = (l: Layout) => {
+    if (l === layout) return;
+    localStorage.setItem(WORKS_LAYOUT_KEY, l);
+    setLayout(l);
+    // The two layouts differ wildly in height — re-anchor on the section top
+    // so the switch doesn't strand the visitor mid-page.
+    requestAnimationFrame(() =>
+      document.getElementById("projects")?.scrollIntoView({ behavior: "instant", block: "start" }),
+    );
+  };
+
+  const modal = (
+    <SideQuestModal open={open} onClose={() => setOpen(false)} quest={QUESTS[quest]} />
+  );
+
+  if (layout === "board")
+    return (
+      <section className="relative font-sans text-sol">
+        <WorksBoard
+          heading={
+            <WorksHeading layout={layout} onLayout={switchLayout} className="pb-2 pt-4" />
+          }
+          onQuest={openQuest}
+        />
+        {modal}
+      </section>
+    );
+
   return (
     <section className="relative pb-[41px] pt-[140px] font-sans text-sol">
+      <WorksHeading layout={layout} onLayout={switchLayout} className="mb-[70px]" />
       <div className={SHELL}>
-        <h2 className="mb-[70px] font-serif text-[32px] italic text-accent">
-          Selected works
-        </h2>
 
         <div className="flex flex-col gap-[140px]">
           <Card project={PROJECTS[0]}>
             {/* right margin, low — hangs off the bottom-right of card 1 */}
             <FloatingPhoto
-              photo="/projects/float-snow.png"
-              stroke="/projects/stroke-snow.svg"
+              photo="/projects/quest-hobbies-circle.png"
               pos="left-full top-[70%] ml-[56px]"
               rotate={-15}
+              scale={1.14}
               ariaLabel="Open side quest — my hobbies"
               onClick={() => openQuest("hobbies")}
             />
@@ -346,10 +431,10 @@ export default function Projects() {
           <Card project={PROJECTS[1]}>
             {/* left margin, low — hangs off the bottom-left of card 2 */}
             <FloatingPhoto
-              photo="/projects/float-beach.png"
-              stroke="/projects/stroke-beach.svg"
+              photo="/projects/quest-family-circle.png"
               pos="right-full top-[64%] mr-[56px]"
               rotate={15}
+              scale={1.14}
               ariaLabel="Open side quest — my family"
               onClick={() => openQuest("family")}
             />
@@ -359,11 +444,10 @@ export default function Projects() {
           <Card project={PROJECTS[4]}>
             {/* right margin, high — hangs off the top-right of card 5 */}
             <FloatingPhoto
-              photo="/projects/float-waterfall.png"
-              stroke="/projects/stroke-waterfall.svg"
+              photo="/projects/quest-travels-circle.png"
               pos="left-full top-[-6%] ml-[56px]"
               rotate={-30}
-              scale={0.9}
+              scale={1.03}
               ariaLabel="Open side quest — travels"
               onClick={() => openQuest("travels")}
             />
@@ -377,11 +461,7 @@ export default function Projects() {
 
       <Gallery />
 
-      <SideQuestModal
-        open={open}
-        onClose={() => setOpen(false)}
-        quest={QUESTS[quest]}
-      />
+      {modal}
     </section>
   );
 }

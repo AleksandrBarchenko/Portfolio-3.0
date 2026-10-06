@@ -2,7 +2,10 @@
 
 // import { ThemeToggle } from "./ThemeToggle";
 import { TypeOnHover } from "./TypeOnHover";
+import { SHELL } from "./shell";
 import { useActiveSection, PAGE_BG, BG_TRANSITION } from "./ActiveSection";
+import { useSound } from "./sound/SoundProvider";
+import { SoundToggle } from "./sound/SoundToggle";
 
 /* Only three destinations. `match` lists the section ids that light this item
    up as the active one (hero has none → no menu item is active on the hero). */
@@ -22,12 +25,14 @@ const NAV: {
   },
 ];
 
-/* Shared page gutter — matches every section's content column. */
-export const SHELL = "mx-auto w-full max-w-[1240px] px-6 sm:px-10 lg:px-14";
+/* Shared page gutter, re-exported for existing client imports. Server
+   components must import it from "@/components/shell" instead. */
+export { SHELL };
 
 export function SiteHeader() {
   // Same value that drives the page backdrop (see ActiveSection).
   const active = useActiveSection();
+  const { playHover } = useSound();
 
   return (
     <header
@@ -59,6 +64,7 @@ export function SiteHeader() {
                     target={item.external ? "_blank" : undefined}
                     rel={item.external ? "noopener noreferrer" : undefined}
                     aria-current={isActive ? "true" : undefined}
+                    onPointerEnter={() => playHover()}
                     className={`whitespace-nowrap transition-colors hover:text-accent ${
                       isActive ? "text-accent" : "text-sol"
                     }`}
@@ -69,6 +75,7 @@ export function SiteHeader() {
               })}
             </nav>
             {/* <ThemeToggle /> */}
+            <SoundToggle />
           </div>
         </div>
       </div>

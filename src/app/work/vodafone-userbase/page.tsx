@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { SHELL } from "@/components/SiteHeader";
+import Link from "next/link";
+import { SHELL } from "@/components/shell";
+import { CaseHeader } from "@/components/CaseHeader";
+import { StorySwitch } from "@/components/StorySwitch";
+import { CaseSummary, type SummaryItem } from "@/components/CaseSummary";
 import { ContactSection } from "@/components/ContactSection";
-import { Card } from "@/components/Projects";
-import { PROJECTS } from "@/components/projects-data";
+import { OtherProjects } from "@/components/WorksBoard";
 import { CaseStats, type CaseStat } from "@/components/CaseStats";
 
 export const metadata: Metadata = {
@@ -102,38 +105,34 @@ const FUNCTIONS = [
   },
 ];
 
-/* Other projects — the full home-page list (minus this case study itself),
-   shown before the contact block so the study leads the reader onward
-   instead of dead-ending. */
-const OTHER_PROJECTS = PROJECTS.filter(
-  (p) => p.href !== "/work/vodafone-userbase",
-);
+/* "What was done" for the short version — one line per challenge. */
+const SUMMARY: SummaryItem[] = [
+  {
+    title: "Increase users engagement",
+    done: "Introduced Stories to surface features without pulling users away from their balances — daily active users grew 3% after release.",
+    target: "challenge-1",
+  },
+  {
+    title: "Make top-up easier to use",
+    done: "One linear picker for sub-numbers, recent and phone-book numbers, with sub-numbers explained right after a top-up.",
+    target: "challenge-2",
+  },
+  {
+    title: "Make complex look easy: auto payment",
+    done: "Cut the “do everything” scope with a single user survey, then turned a complex build into one simple flow.",
+    target: "challenge-3",
+  },
+  {
+    title: "Ship new functionality across the app",
+    done: "Onboarding, offers in expenses, geosearch, opening a new account in-app and gifts for a friend.",
+    target: "more",
+  },
+];
 
 export default function VodafoneUserbaseCaseStudy() {
   return (
-    <main className="theme-fade min-h-screen bg-paper font-sans text-sol">
-      {/* Lightweight case-study header — wordmark home link, back-to-work. */}
-      <header className="sticky top-0 z-40 bg-paper theme-fade">
-        <div className={SHELL}>
-          <div className="flex items-center justify-between py-5">
-            <a href="/" className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logos/logo.svg" alt="" className="h-10 w-10" aria-hidden />
-              <span className="font-serif text-[20px] font-medium tracking-tight text-sol">
-                a.barchenko
-              </span>
-            </a>
-            <div className="flex items-center gap-6 sm:gap-10">
-              <a
-                href="/#projects"
-                className={`whitespace-nowrap ${T.body} text-sol transition-colors hover:text-accent`}
-              >
-                [ back to work ]
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+    <main className="case-bg min-h-screen font-sans text-sol">
+      <CaseHeader />
 
       {/* Hero — label row, title, overview, spec strip. */}
       <section className="pt-[70px] pb-[80px]">
@@ -194,14 +193,6 @@ export default function VodafoneUserbaseCaseStudy() {
         </div>
       </section>
 
-      {/* Improvements — the headline metrics with their animated figures
-          (title intentionally omitted). */}
-      <section className="pb-[100px]">
-        <div className={SHELL}>
-          <CaseStats stats={IMPROVEMENTS} />
-        </div>
-      </section>
-
       {/* Role / Challenges / Process — label-left intro rows. */}
       <section className="pb-[100px]">
         <div className={SHELL}>
@@ -229,8 +220,22 @@ export default function VodafoneUserbaseCaseStudy() {
         </div>
       </section>
 
-      {/* The Process — closing method statement + flow diagram. */}
+      {/* Improvements — the headline metrics with their animated figures
+          (title intentionally omitted). */}
       <section className="pb-[100px]">
+        <div className={SHELL}>
+          <CaseStats stats={IMPROVEMENTS} />
+        </div>
+      </section>
+
+      {/* What was done — the short version's summary of the work. */}
+      <CaseSummary items={SUMMARY} />
+
+      {/* The fold — short version above, the full story opens below. */}
+      <StorySwitch />
+
+      {/* The Process — closing method statement + flow diagram. */}
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>The Process</h2>
@@ -257,9 +262,9 @@ export default function VodafoneUserbaseCaseStudy() {
 
       {/* Redesign cross-link — the new functionalities build on a full redesign
           of the existing features; point readers to that first case study. */}
-      <section className="pb-[100px]">
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
-          <a
+          <Link
             href="/work/vodafone"
             className="group grid grid-cols-1 gap-8 rounded-[24px] border border-sol/15 p-8 transition-colors duration-300 ease-out hover:border-accent/50 sm:grid-cols-2 sm:items-start sm:gap-16 sm:p-12"
           >
@@ -295,12 +300,12 @@ export default function VodafoneUserbaseCaseStudy() {
                 </svg>
               </span>
             </div>
-          </a>
+          </Link>
         </div>
       </section>
 
       {/* Challenge 1 — engagement / Stories. */}
-      <section className="pb-[100px]">
+      <section id="challenge-1" data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <div className="flex flex-col gap-3">
@@ -374,7 +379,7 @@ export default function VodafoneUserbaseCaseStudy() {
       </section>
 
       {/* Challenge 2 — usability, top-up example. */}
-      <section className="pb-[100px]">
+      <section id="challenge-2" data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <div className="flex flex-col gap-3">
@@ -461,7 +466,7 @@ export default function VodafoneUserbaseCaseStudy() {
       </section>
 
       {/* Challenge 3 — complexity, auto payment example. */}
-      <section className="pb-[100px]">
+      <section id="challenge-3" data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <div className="flex flex-col gap-3">
@@ -532,7 +537,7 @@ export default function VodafoneUserbaseCaseStudy() {
       </section>
 
       {/* Research — how the team validated the work. */}
-      <section className="pb-[100px]">
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>Research</h2>
@@ -572,7 +577,7 @@ export default function VodafoneUserbaseCaseStudy() {
 
       {/* A few more functionalities — the additional work shipped over the
           long-term project. */}
-      <section className="pb-[100px]">
+      <section id="more" data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>Also a few more functionalities</h2>
@@ -613,7 +618,7 @@ export default function VodafoneUserbaseCaseStudy() {
       </section>
 
       {/* How we measure success — closing quote + award / team photo. */}
-      <section className="pb-[120px]">
+      <section data-detail className="pb-[120px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>How we measure success</h2>
@@ -641,17 +646,10 @@ export default function VodafoneUserbaseCaseStudy() {
         </div>
       </section>
 
-      {/* Other projects — sits on the surface-2 panel, matching the home page's
-          video section background. */}
-      <section className="bg-surface-2 pt-[100px] pb-[120px]">
-        <div className={SHELL}>
-          <h2 className={`mb-[70px] ${T.section}`}>Other projects</h2>
-          <div className="flex flex-col gap-[140px]">
-            {OTHER_PROJECTS.map((p) => (
-              <Card key={p.title} project={p} />
-            ))}
-          </div>
-        </div>
+      {/* Other projects — the home page's side-scrolling board, cases and
+          stats only (this case left out). */}
+      <section>
+        <OtherProjects exclude="/work/vodafone-userbase" />
       </section>
 
       {/* Contact — the same final block as the home page. */}
@@ -660,9 +658,9 @@ export default function VodafoneUserbaseCaseStudy() {
       {/* Footer. */}
       <footer className="border-t border-line py-8">
         <div className={`${SHELL} flex items-center justify-between ${T.label} text-sol-dim`}>
-          <a href="/" className="transition-colors hover:text-accent">
+          <Link href="/" className="transition-colors hover:text-accent">
             Home
-          </a>
+          </Link>
           <span>© 2025</span>
         </div>
       </footer>

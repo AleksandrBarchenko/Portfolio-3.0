@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useOpenCloseSound } from "@/components/sound/SoundProvider";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -24,6 +25,8 @@ export default function VideoModal({
   title?: string;
 }) {
   const reduce = useReducedMotion();
+  // One cue when the overview player opens, one when it closes.
+  useOpenCloseSound(open);
 
   // Escape to close + lock background scroll while open.
   useEffect(() => {

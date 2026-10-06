@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { SHELL } from "@/components/SiteHeader";
+import Link from "next/link";
+import { SHELL } from "@/components/shell";
+import { CaseHeader } from "@/components/CaseHeader";
+import { StorySwitch } from "@/components/StorySwitch";
+import { CaseSummary, type SummaryItem } from "@/components/CaseSummary";
 import { ContactSection } from "@/components/ContactSection";
-import { Card } from "@/components/Projects";
-import { PROJECTS } from "@/components/projects-data";
+import { OtherProjects } from "@/components/WorksBoard";
 import { CaseStats, type CaseStat } from "@/components/CaseStats";
 
 export const metadata: Metadata = {
@@ -110,36 +113,39 @@ const CHALLENGES = [
   },
 ];
 
-/* Other projects — the full home-page list (minus this case study itself),
-   shown before the contact block so the study leads the reader onward
-   instead of dead-ending. */
-const OTHER_PROJECTS = PROJECTS.filter((p) => p.href !== "/work/vodafone");
+/* "What was done" for the short version — one line per challenge. */
+const SUMMARY: SummaryItem[] = [
+  {
+    title: "Help users achieve their goals faster",
+    done: "A “1-click design” for key flows — checking your own tariff went from three steps to one.",
+    target: "challenge-1",
+  },
+  {
+    title: "Reduce the load on the call center and retail network",
+    done: "Rebuilt the main page from a feature priority list: every balance at a glance, quick access to key actions and a self-serve FAQ.",
+    target: "challenge-2",
+  },
+  {
+    title: "Increase sales and become the main digital channel",
+    done: "Dynamic cards on the main screen that surface underused services and bonuses based on what each user already has.",
+    target: "challenge-3",
+  },
+  {
+    title: "Modernize the app to match the global brand",
+    done: "A new style and component system drawn from global Vodafone, plus microinteractions, bigger tap areas and clearer status feedback.",
+    target: "challenge-4",
+  },
+  {
+    title: "Validate with real users",
+    done: "Interviews with 25 participants reshaped navigation — two main sections became four, bringing tariffs and add-ons into reach.",
+    target: "research",
+  },
+];
 
 export default function VodafoneCaseStudy() {
   return (
-    <main className="theme-fade min-h-screen bg-paper font-sans text-sol">
-      {/* Lightweight case-study header — wordmark home link, back-to-work. */}
-      <header className="sticky top-0 z-40 bg-paper theme-fade">
-        <div className={SHELL}>
-          <div className="flex items-center justify-between py-5">
-            <a href="/" className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logos/logo.svg" alt="" className="h-10 w-10" aria-hidden />
-              <span className="font-serif text-[20px] font-medium tracking-tight text-sol">
-                a.barchenko
-              </span>
-            </a>
-            <div className="flex items-center gap-6 sm:gap-10">
-              <a
-                href="/#projects"
-                className={`whitespace-nowrap ${T.body} text-sol transition-colors hover:text-accent`}
-              >
-                [ back to work ]
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+    <main className="case-bg min-h-screen font-sans text-sol">
+      <CaseHeader />
 
       {/* Hero — label row, title, overview, spec strip. */}
       <section className="pt-[70px] pb-[80px]">
@@ -199,14 +205,6 @@ export default function VodafoneCaseStudy() {
         </div>
       </section>
 
-      {/* Improvements — the four headline metrics, each with its animated
-          figure (title intentionally omitted). */}
-      <section className="pb-[100px]">
-        <div className={SHELL}>
-          <CaseStats stats={IMPROVEMENTS} />
-        </div>
-      </section>
-
       {/* Role / Challenges / Process — label-left intro rows, matching the
           rhythm used by Why Redesign / Challenges / Research below. */}
       <section className="pb-[100px]">
@@ -235,8 +233,22 @@ export default function VodafoneCaseStudy() {
         </div>
       </section>
 
-      {/* Why redesign. */}
+      {/* Improvements — the four headline metrics, each with its animated
+          figure (title intentionally omitted). */}
       <section className="pb-[100px]">
+        <div className={SHELL}>
+          <CaseStats stats={IMPROVEMENTS} />
+        </div>
+      </section>
+
+      {/* What was done — the short version's summary of the work. */}
+      <CaseSummary items={SUMMARY} />
+
+      {/* The fold — short version above, the full story opens below. */}
+      <StorySwitch />
+
+      {/* Why redesign. */}
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>Why Redesign</h2>
@@ -253,11 +265,11 @@ export default function VodafoneCaseStudy() {
       </section>
 
       {/* Challenges — numbered, each with its delivered work. */}
-      <section className="pb-[100px]">
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="flex flex-col gap-[110px]">
             {CHALLENGES.map((c) => (
-              <div key={c.n}>
+              <div key={c.n} id={c.n.toLowerCase().replace(" ", "-")}>
                 <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
                   <div className="flex flex-col gap-3">
                     <span className={`${T.label} text-accent`}>{c.n}</span>
@@ -292,9 +304,9 @@ export default function VodafoneCaseStudy() {
       {/* Design System cross-link — the existing teaser, now wrapped in a
           bordered, clickable card. Sits before Research as a related-case-study
           teaser. */}
-      <section className="pb-[100px]">
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
-          <a
+          <Link
             href="/work/vodafone-design-system"
             className="group grid grid-cols-1 gap-8 rounded-[24px] border border-sol/15 p-8 transition-colors duration-300 ease-out hover:border-accent/50 sm:grid-cols-2 sm:items-start sm:gap-16 sm:p-12"
           >
@@ -334,12 +346,12 @@ export default function VodafoneCaseStudy() {
                 </svg>
               </span>
             </div>
-          </a>
+          </Link>
         </div>
       </section>
 
       {/* Research. */}
-      <section className="pb-[100px]">
+      <section id="research" data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>Research</h2>
@@ -389,7 +401,7 @@ export default function VodafoneCaseStudy() {
       </section>
 
       {/* How we measure success — closing quote. */}
-      <section className="pb-[120px]">
+      <section data-detail className="pb-[120px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>How we measure success</h2>
@@ -417,17 +429,10 @@ export default function VodafoneCaseStudy() {
         </div>
       </section>
 
-      {/* Other projects — sits on the surface-2 panel, matching the home page's
-          video section background. */}
-      <section className="bg-surface-2 pt-[100px] pb-[120px]">
-        <div className={SHELL}>
-          <h2 className={`mb-[70px] ${T.section}`}>Other projects</h2>
-          <div className="flex flex-col gap-[140px]">
-            {OTHER_PROJECTS.map((p) => (
-              <Card key={p.title} project={p} />
-            ))}
-          </div>
-        </div>
+      {/* Other projects — the home page's side-scrolling board, cases and
+          stats only (this case left out). */}
+      <section>
+        <OtherProjects exclude="/work/vodafone" />
       </section>
 
       {/* Contact — the same final block as the home page. */}
@@ -436,9 +441,9 @@ export default function VodafoneCaseStudy() {
       {/* Footer. */}
       <footer className="border-t border-line py-8">
         <div className={`${SHELL} flex items-center justify-between ${T.label} text-sol-dim`}>
-          <a href="/" className="transition-colors hover:text-accent">
+          <Link href="/" className="transition-colors hover:text-accent">
             Home
-          </a>
+          </Link>
           <span>© 2025</span>
         </div>
       </footer>

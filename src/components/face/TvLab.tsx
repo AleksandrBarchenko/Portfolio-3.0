@@ -25,6 +25,8 @@ import {
   type TvStateParams,
 } from "@/components/face/TvHead";
 import { useAvatarMode } from "@/components/AvatarMode";
+import { useSound } from "@/components/sound/SoundProvider";
+import { CUE } from "@/components/sound/sound-events";
 
 /* The reply the head "speaks" while the Replying state is selected, so the
    mouth animates and you can tune it against real motion. */
@@ -129,6 +131,7 @@ function cloneSettings(s: TvSettings): TvSettings {
 
 export function TvLab() {
   const { setMode } = useAvatarMode();
+  const { play } = useSound();
   const [settings, setSettings] = useState<TvSettings>(() =>
     cloneSettings(DEFAULT_TV_SETTINGS),
   );
@@ -173,6 +176,7 @@ export function TvLab() {
     )}`;
     try {
       await navigator.clipboard.writeText(json);
+      play(CUE.copy);
       setCopied(true);
       setTimeout(() => setCopied(false), 1400);
     } catch {
@@ -188,7 +192,10 @@ export function TvLab() {
         {/* Close — back to the TV head site */}
         <button
           type="button"
-          onClick={() => setMode("face")}
+          onClick={() => {
+            play(CUE.leaveCase);
+            setMode("face");
+          }}
           aria-label="Close tuning page"
           className="absolute right-6 top-6 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-pill text-2xl text-sol-dim transition-colors hover:text-accent"
         >

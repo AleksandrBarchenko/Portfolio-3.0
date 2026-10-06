@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  AnimatePresence,
   motion,
   useAnimationControls,
   useMotionValue,
   useReducedMotion,
 } from "framer-motion";
 import { Avatar } from "@/components/Avatar";
+import { useRobotVoice, useSound } from "@/components/sound/SoundProvider";
 import type { OrbState } from "@/types/orb";
 import { SHELL } from "@/components/SiteHeader";
 import Projects from "@/components/Projects";
 import Skills from "@/components/Skills";
 import VideoModal from "@/components/VideoModal";
-import { TypeOnHover } from "@/components/TypeOnHover";
-import { CopyLink } from "@/components/CopyLink";
+import { ContactSection } from "@/components/ContactSection";
+import { INTRO_SEEN_KEY, LAST_CASE_KEY } from "@/components/nav-memory";
 import { useActiveSection, PAGE_BG, BG_TRANSITION } from "@/components/ActiveSection";
 import { useAvatarMode } from "@/components/AvatarMode";
 
@@ -24,8 +26,15 @@ const GREETING =
   "Hey, nice to meet you\nhere. I'm Alex Barchenko -\nDigital Product Designer";
 const CASES =
   "Have no time to explore?\nGot you! Just watch case\nstudies overview.";
-const CTA_LINE =
-  "Have a project in mind\nyou need a help with?\nLet’s move it together";
+
+/* Right-edge pager for the snapped pages — where you are, and a jump to any. */
+const PAGER: { id: Page; label: string }[] = [
+  { id: "hero", label: "hello" },
+  { id: "video", label: "overview" },
+  { id: "projects", label: "work" },
+  { id: "skills", label: "skills" },
+  { id: "cta", label: "contact" },
+];
 
 /* Client logos, laid out 3 across × 2 down. Each has a light- and dark-mode
    lockup; the pair is swapped by the `dark:` variant (driven by data-theme). */
@@ -148,6 +157,24 @@ function speechXY(g: ReturnType<typeof geom>, orbX: number, orbY: number) {
   return { x: orbX + g.orbW / 2 - SPEECH_W / 2, y: orbY + g.orbW * 0.93 };
 }
 
+/* A hard reload of the home page is a fresh start, not a return visit: forget
+   the session's "intro seen" / last-case memory and ignore any section hash, so
+   the intro plays again from the centred head. Decided once per document load
+   at module evaluation (so React Strict Mode's double effects agree), only when
+   the reloaded page IS home, and cleared once that intro has played — later
+   in-app returns (e.g. "back to work" → /#projects) skip as usual. */
+let reloadedHome = false;
+if (typeof window !== "undefined" && location.pathname === "/") {
+  const nav = performance.getEntriesByType("navigation")[0] as
+    | PerformanceNavigationTiming
+    | undefined;
+  reloadedHome = nav?.type === "reload";
+  if (reloadedHome) {
+    sessionStorage.removeItem(INTRO_SEEN_KEY);
+    sessionStorage.removeItem(LAST_CASE_KEY);
+  }
+}
+
 export default function Experience() {
   const reduce = useReducedMotion();
   const { w: vw, h: vh, desktop } = useViewport();
@@ -182,9 +209,22 @@ export default function Experience() {
   const [heroContentIn, setHeroContentIn] = useState(false);
 
   const [line, setLine] = useState(GREETING);
-  const [typed, setTyped] = useState(reduce ? GREETING.length : 0);
-  const [speaking, setSpeaking] = useState(!reduce);
+  const [typed, setTyped] = useState(0);
+  const [speaking, setSpeaking] = useState(true);
   const spoken = useRef({ video: false, cta: false });
+  // Browsers keep audio silent until a click, so the greeting always types
+  // mute on load. The intro offers a hint; clicking it turns sound on and says
+  // the greeting again (`take` restarts the typing + voice) — out loud.
+  const [take, setTake] = useState(0);
+  const [heard, setHeard] = useState(false);
+  const { enabled: soundOn, setEnabled: setSoundOn } = useSound();
+  const hearGreeting = () => {
+    if (!soundOn) setSoundOn(true);
+    setHeard(true);
+    setLine(GREETING);
+    setTake((n) => n + 1);
+    setSpeaking(true);
+  };
 
   const orb = useAnimationControls();
   const speech = useAnimationControls();
@@ -206,6 +246,37 @@ export default function Experience() {
     skills: null,
     cta: null,
   });
+
+  // Returning visitors skip the script. Once the greeting has played this
+  // session — or when they arrive on a deep link / back from a case study —
+  // replaying it (and locking scroll for it) is friction, not charm: jump
+  // straight to the landed hero state and, below, to where they left off.
+  // Layout effect so the skip lands before the first paint of the intro.
+  const skipIntro = useRef(false);
+  const returnTo = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const lastCase = sessionStorage.getItem(LAST_CASE_KEY);
+    if (reloadedHome && location.hash) {
+      // Drop the stale section hash so the URL matches the hero we're showing.
+      history.replaceState(history.state, "", location.pathname + location.search);
+    }
+    const hash = !reloadedHome && location.hash.length > 1 ? location.hash : null;
+    if (!sessionStorage.getItem(INTRO_SEEN_KEY) && !hash && !lastCase) return;
+    skipIntro.current = true;
+    rushed.current = true;
+    returnTo.current = lastCase ? `[data-case="${CSS.escape(lastCase)}"]` : hash;
+    setSpeaking(false);
+    setTyped(GREETING.length);
+    setHeroContentIn(true);
+    setPhase("ready");
+    setScrollLocked(false);
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "ready") return;
+    sessionStorage.setItem(INTRO_SEEN_KEY, "1");
+    reloadedHome = false;
+  }, [phase]);
 
   // Reload safety. This is a scripted top-down narrative and the intro pins the
   // fixed orb to the viewport centre for the greeting. If the browser restores a
@@ -329,6 +400,10 @@ export default function Experience() {
     }
   }, [desktop]);
 
+  // Robo-babble along with the typing (silent under reduced motion, which
+  // skips the typing).
+  useRobotVoice(speaking && !reduce, line, take);
+
   // Type the current line while `speaking`.
   useEffect(() => {
     if (!speaking) return;
@@ -349,7 +424,7 @@ export default function Experience() {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [speaking, line, reduce]);
+  }, [speaking, line, reduce, take]);
 
   // Intro → reveal page 1 once the greeting is spoken.
   useEffect(() => {
@@ -373,18 +448,19 @@ export default function Experience() {
   // so they lift to the top in lockstep with the (in-flow) video frame instead
   // of doing a separate timed hop. `past` = pixels scrolled below the video
   // section's snapped position; 0 while hero/video are the active page.
+  const syncExit = () => {
+    const videoEl = sectionRefs.current.video;
+    if (!videoEl) return;
+    const past = Math.max(0, window.scrollY - videoEl.offsetTop);
+    exitY.set(-past);
+    exitOpacity.set(Math.max(0, 1 - past / (window.innerHeight * 0.5)));
+  };
   useEffect(() => {
     if (!desktop) return;
     let raf = 0;
     const onScroll = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const videoEl = sectionRefs.current.video;
-        if (!videoEl) return;
-        const past = Math.max(0, window.scrollY - videoEl.offsetTop);
-        exitY.set(-past);
-        exitOpacity.set(Math.max(0, 1 - past / (window.innerHeight * 0.5)));
-      });
+      raf = requestAnimationFrame(syncExit);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -394,7 +470,48 @@ export default function Experience() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [desktop, exitY, exitOpacity]);
+
+  // Land a returning visitor where they left off: on the case card they opened
+  // (settling it in so the eye finds it), or on the linked section. Runs once
+  // the skip has released the scroll lock; synchronous, and it syncs the orb's
+  // scroll-linked exit in the same frame so the orb never flashes over the list.
+  useEffect(() => {
+    const target = returnTo.current;
+    if (!skipIntro.current || scrollLocked || !target) return;
+    returnTo.current = null;
+    sessionStorage.removeItem(LAST_CASE_KEY);
+    const el = document.querySelector<HTMLElement>(target);
+    if (!el) return;
+    const isCard = el.hasAttribute("data-case");
+    if (isCard) {
+      // The card sits mid-way down the free-scrolling list — don't let
+      // mandatory snap yank it to a page edge (the snap effect restores it).
+      document.documentElement.style.scrollSnapType = "none";
+      if (el.closest("[data-board]")) {
+        // Side-scrolling works board: it knows how far down the page slides
+        // this card to the centre, so let it do the scrolling.
+        el.dispatchEvent(new Event("board:focus", { bubbles: true }));
+      } else {
+        const r = el.getBoundingClientRect();
+        const top = r.top + window.scrollY - Math.max(96, (window.innerHeight - r.height) / 2);
+        window.scrollTo({ top, behavior: "instant" });
+      }
+      if (!reduce)
+        el.animate(
+          [
+            { opacity: 0.3, transform: "translateY(24px)" },
+            { opacity: 1, transform: "none" },
+          ],
+          { duration: 900, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        );
+    } else {
+      el.scrollIntoView({ behavior: "instant", block: "start" });
+    }
+    syncExit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollLocked]);
 
   // Orchestrate the orb + speech for the active page. Only reacts to page/phase
   // changes (geometry is read from a ref so a resize doesn't replay the anim).
@@ -409,6 +526,13 @@ export default function Experience() {
       if (phase === "intro") {
         orb.set({ x: g.centerX, y: g.centerY, scale: 1, opacity: 1 });
         speech.set({ ...speechXY(g, g.centerX, g.centerY), opacity: 1 });
+        return;
+      }
+      if (fromIntro && skipIntro.current) {
+        // Returning visitor: no greeting, no glide — the hero is already landed.
+        orb.set({ x: g.leftX, y: g.midY, scale: 1, opacity: 1 });
+        speech.set({ ...speechXY(g, g.leftX, g.midY), opacity: 1 });
+        setGlideDone(true);
         return;
       }
       if (active === "hero") {
@@ -500,7 +624,7 @@ export default function Experience() {
       orb.set({ x: g.leftX, y: g.midY, scale: 1, opacity: 1 });
       speech.set(speechXY(g, g.leftX, g.midY));
     }
-    // `cta` has its own in-layout orb (see ContactOrb) — the overlay orb stays
+    // `cta` has its own in-layout orb (see ContactSection) — the overlay orb stays
     // hidden there, so nothing to reposition on resize.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vw, vh]);
@@ -555,6 +679,37 @@ export default function Experience() {
           </motion.p>
         </motion.div>
       )}
+
+      <AnimatePresence>
+        {phase === "intro" && !heard && !reduce && (
+          <motion.button
+            type="button"
+            onClick={hearGreeting}
+            className="fixed bottom-10 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full px-4 py-2 text-[15px] text-sol-dim transition-colors hover:text-sol"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0, transition: { delay: 0.6, duration: 0.5, ease: EASE } }}
+            exit={{ opacity: 0, transition: { duration: 0.3 } }}
+          >
+            {/* Speaker with waves — same glyph as the header's SoundToggle */}
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M4 9v6h4l5 4V5L8 9H4z" />
+              <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+              <path d="M19 6a9 9 0 0 1 0 12" />
+            </svg>
+            click here if you want to hear the sound
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Page 1 — hero */}
       <Page
@@ -697,53 +852,12 @@ export default function Experience() {
         <Skills />
       </section>
 
-      {/* Page 5 — cta. The orb here lives INSIDE the section's layout (not the
-          fixed overlay), so it simply scrolls with the page — up as you scroll
-          down into contact, down as you scroll up out of it. */}
-      <section
-        id="cta"
-        ref={(el) => {
-          sectionRefs.current.cta = el;
-        }}
-        className="relative flex min-h-[100svh] snap-start snap-always items-center py-28 lg:py-24"
-      >
-        <div className={`${SHELL} w-full`}>
-          <div className="grid grid-cols-1 items-center gap-x-10 gap-y-10 lg:grid-cols-2">
-            <div>
-              {desktop ? (
-                <ContactOrb />
-              ) : (
-                <MobileOrb line={CTA_LINE} state={orbState} />
-              )}
-            </div>
-            <div>
-        <div className="flex flex-col gap-14">
-          <div className="flex flex-col gap-4 text-[clamp(26px,3vw,36px)] leading-[1.2] text-accent-2">
-            <CopyLink
-              href="mailto:alex.barcenko@gmail.com"
-              value="alex.barcenko@gmail.com"
-              message="email copied"
-            />
-            <CopyLink
-              href="tel:+351910042087"
-              value="+351910042087"
-              message="phone copied"
-            />
-          </div>
-          <div className="flex flex-col gap-10 text-[18px] text-sol">
-            <span>.based in Portugal</span>
-            <a href="#" className="w-fit">
-              <TypeOnHover text="{ behance }" />
-            </a>
-            <a href="#" className="w-fit">
-              <TypeOnHover text="{ linkedin }" />
-            </a>
-          </div>
-        </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Page 5 — cta. The shared contact block (also closes every case study).
+          Its orb lives INSIDE the section's layout (not the fixed overlay), so
+          it simply scrolls with the page; it reacts to the contact links. */}
+      <ContactSection id="cta" className="min-h-[100svh] snap-start snap-always" />
+
+      <SectionPager active={active} visible={desktop && phase === "ready" && heroContentIn} />
 
       <VideoModal
         open={videoOpen}
@@ -783,78 +897,6 @@ function Page({
   );
 }
 
-/* Desktop contact orb — a normal element in the CTA section's layout, so it
-   scrolls with the page instead of being animated. Types its line once, the
-   first time it scrolls into view. */
-function ContactOrb() {
-  const reduce = useReducedMotion();
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [typed, setTyped] = useState(reduce ? CTA_LINE.length : 0);
-  const [speaking, setSpeaking] = useState(false);
-  const started = useRef(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || reduce) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting && !started.current) {
-          started.current = true;
-          setSpeaking(true);
-        }
-      },
-      { threshold: 0.5 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [reduce]);
-
-  useEffect(() => {
-    if (!speaking) return;
-    let raf = 0;
-    const start = performance.now();
-    const step = (now: number) => {
-      const n = Math.min(CTA_LINE.length, Math.floor((now - start) / 30));
-      setTyped(n);
-      if (n < CTA_LINE.length) raf = requestAnimationFrame(step);
-      else setSpeaking(false);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [speaking]);
-
-  const state: OrbState = speaking ? "replying" : "idle";
-  const text = speaking ? CTA_LINE.slice(0, typed) : CTA_LINE;
-
-  // Match the hero head's size, and — like the hero — push any growth beyond the
-  // 460 cap into the left margin (shift left by half the surplus, since the head
-  // is centred in its column) so it never crowds the contact copy on its right.
-  const { w: vw } = useViewport();
-  const { mode } = useAvatarMode();
-  const face = mode === "face";
-  const size = headSize(vw, face);
-  const grow = headGrow(vw, face);
-
-  return (
-    <div
-      ref={ref}
-      className="flex flex-col items-center"
-      style={{ transform: `translate(${-grow / 2}px, -78px)` }}
-    >
-      <div className="relative aspect-square" style={{ width: size }}>
-        <Avatar state={state} />
-      </div>
-      <p
-        className="-mt-[8px] whitespace-pre-line text-center text-[22px] leading-8 text-sol-dim"
-        style={{ width: SPEECH_W }}
-      >
-        {text}
-        {speaking && <Caret />}
-      </p>
-    </div>
-  );
-}
-
 function MobileOrb({
   line,
   state,
@@ -885,5 +927,61 @@ function MobileOrb({
         {line}
       </p>
     </div>
+  );
+}
+
+/* Right-edge pager for the snapped pages. Snap paging hides how long the page
+   is and where you are in it, so a thin rail of ticks marks every page — the
+   active one long and accent. Labels stay out of the content's way: they show
+   while the rail is hovered/focused, and the new page's label whispers in for a
+   moment each time the page changes. Anchors, so the intro's nav handling and
+   the smooth/snap scroll behave exactly like the header links. */
+function SectionPager({ active, visible }: { active: Page; visible: boolean }) {
+  const [flash, setFlash] = useState(false);
+  const first = useRef(true);
+
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    setFlash(true);
+    const t = window.setTimeout(() => setFlash(false), 1400);
+    return () => window.clearTimeout(t);
+  }, [active]);
+
+  return (
+    <nav
+      aria-label="Page sections"
+      className={`group/rail fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-end transition-opacity duration-700 lg:flex xl:right-6 ${
+        visible ? "opacity-100" : "pointer-events-none opacity-0"
+      }`}
+    >
+      {PAGER.map((item, i) => {
+        const on = item.id === active;
+        return (
+          <a
+            key={item.id}
+            href={`#${item.id}`}
+            aria-current={on ? "true" : undefined}
+            className="group/tick -mr-4 flex items-center gap-3 py-[7px] pl-3 pr-4 outline-none xl:-mr-6 xl:pr-6"
+          >
+            <span
+              className={`pointer-events-none whitespace-nowrap rounded-full bg-paper/90 px-2 py-0.5 text-[12px] uppercase tracking-wide transition-[opacity,transform] group-hover/rail:pointer-events-auto duration-300 ease-out group-hover/rail:translate-x-0 group-hover/rail:opacity-100 group-focus-within/rail:translate-x-0 group-focus-within/rail:opacity-100 ${
+                on ? "text-accent" : "text-sol-dim group-hover/tick:text-sol"
+              } ${on && flash ? "translate-x-0 opacity-100" : "translate-x-1 opacity-0"}`}
+            >
+              {String(i + 1).padStart(2, "0")} {item.label}
+            </span>
+            <span
+              aria-hidden
+              className={`h-[2px] rounded-full transition-[width,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                on ? "w-7 bg-accent" : "w-3.5 bg-sol/25 group-hover/tick:w-5 group-hover/tick:bg-sol/60"
+              }`}
+            />
+          </a>
+        );
+      })}
+    </nav>
   );
 }

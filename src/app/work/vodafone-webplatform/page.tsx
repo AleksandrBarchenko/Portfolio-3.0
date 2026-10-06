@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
-import { SHELL } from "@/components/SiteHeader";
+import Link from "next/link";
+import { SHELL } from "@/components/shell";
+import { CaseHeader } from "@/components/CaseHeader";
+import { StorySwitch } from "@/components/StorySwitch";
+import { CaseSummary, type SummaryItem } from "@/components/CaseSummary";
 import { ContactSection } from "@/components/ContactSection";
-import { Card } from "@/components/Projects";
-import { PROJECTS } from "@/components/projects-data";
+import { OtherProjects } from "@/components/WorksBoard";
 
 export const metadata: Metadata = {
   title:
@@ -125,38 +128,39 @@ const RESEARCH_SOURCES = [
   "And most importantly — direct interviews with business owners",
 ];
 
-/* Other projects — the full home-page list (minus this case study itself),
-   shown before the contact block so the study leads the reader onward
-   instead of dead-ending. */
-const OTHER_PROJECTS = PROJECTS.filter(
-  (p) => p.href !== "/work/vodafone-webplatform",
-);
+/* "What was done" for the short version — one line per challenge. */
+const SUMMARY: SummaryItem[] = [
+  {
+    title: "Separate B2C from B2B",
+    done: "Split one mixed system into two targeted solutions — the data showed users rarely need business and personal features at once.",
+    target: "challenge-1",
+  },
+  {
+    title: "Make it part of the Vodafone Ukraine ecosystem",
+    done: "Replaced fully custom elements with the Vodafone Ukraine design system.",
+    target: "challenge-2",
+  },
+  {
+    title: "Make users learn faster",
+    done: "One content hierarchy for every feature — list, details, target action — and one set of rules for repeated flows like top-up.",
+    target: "challenge-3",
+  },
+  {
+    title: "Make the brand easy to reach on mobile",
+    done: "A hierarchy that adapts cleanly to mobile browsers; the previous site had no mobile version at all.",
+    target: "challenge-4",
+  },
+  {
+    title: "Extend the B2B toolset",
+    done: "Geosearch, connection status and administration.",
+    target: "more",
+  },
+];
 
 export default function VodafoneWebPlatformCaseStudy() {
   return (
-    <main className="theme-fade min-h-screen bg-paper font-sans text-sol">
-      {/* Lightweight case-study header — wordmark home link, back-to-work. */}
-      <header className="sticky top-0 z-40 bg-paper theme-fade">
-        <div className={SHELL}>
-          <div className="flex items-center justify-between py-5">
-            <a href="/" className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logos/logo.svg" alt="" className="h-10 w-10" aria-hidden />
-              <span className="font-serif text-[20px] font-medium tracking-tight text-sol">
-                a.barchenko
-              </span>
-            </a>
-            <div className="flex items-center gap-6 sm:gap-10">
-              <a
-                href="/#projects"
-                className={`whitespace-nowrap ${T.body} text-sol transition-colors hover:text-accent`}
-              >
-                [ back to work ]
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+    <main className="case-bg min-h-screen font-sans text-sol">
+      <CaseHeader />
 
       {/* Hero — label row, title, overview, spec strip. */}
       <section className="pt-[70px] pb-[80px]">
@@ -217,19 +221,6 @@ export default function VodafoneWebPlatformCaseStudy() {
         </div>
       </section>
 
-      {/* Improvements — single headline outcome of the split. */}
-      <section className="pb-[100px]">
-        <div className={SHELL}>
-          <div className="grid grid-cols-1 gap-x-16 gap-y-6 border-y border-sol/12 py-12 lg:grid-cols-2 lg:items-start">
-            <h2 className={`${T.label} text-sol-dim`}>Improvements</h2>
-            <p className={`${T.sub}`}>
-              The separation of platforms helped to speed up the interaction with
-              the platform for two categories of users.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Role / Challenges / Process — label-left intro rows. */}
       <section className="pb-[100px]">
         <div className={SHELL}>
@@ -257,8 +248,27 @@ export default function VodafoneWebPlatformCaseStudy() {
         </div>
       </section>
 
-      {/* Why redesign — the challenges framing. */}
+      {/* Improvements — single headline outcome of the split. */}
       <section className="pb-[100px]">
+        <div className={SHELL}>
+          <div className="grid grid-cols-1 gap-x-16 gap-y-6 border-y border-sol/12 py-12 lg:grid-cols-2 lg:items-start">
+            <h2 className={`${T.label} text-sol-dim`}>Improvements</h2>
+            <p className={`${T.sub}`}>
+              The separation of platforms helped to speed up the interaction with
+              the platform for two categories of users.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* What was done — the short version's summary of the work. */}
+      <CaseSummary items={SUMMARY} />
+
+      {/* The fold — short version above, the full story opens below. */}
+      <StorySwitch />
+
+      {/* Why redesign — the challenges framing. */}
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>The Challenges</h2>
@@ -275,11 +285,11 @@ export default function VodafoneWebPlatformCaseStudy() {
       </section>
 
       {/* Challenges — numbered, each with its delivered work. */}
-      <section className="pb-[100px]">
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="flex flex-col gap-[110px]">
             {CHALLENGES.map((c) => (
-              <div key={c.n}>
+              <div key={c.n} id={c.n.toLowerCase().replace(" ", "-")}>
                 <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
                   <div className="flex flex-col gap-3">
                     <span className={`${T.label} text-accent`}>{c.n}</span>
@@ -312,9 +322,9 @@ export default function VodafoneWebPlatformCaseStudy() {
 
       {/* Design System cross-link — the platform adopts the Vodafone Ukraine
           design system; point readers to that related case study. */}
-      <section className="pb-[100px]">
+      <section data-detail className="pb-[100px]">
         <div className={SHELL}>
-          <a
+          <Link
             href="/work/vodafone-design-system"
             className="group grid grid-cols-1 gap-8 rounded-[24px] border border-sol/15 p-8 transition-colors duration-300 ease-out hover:border-accent/50 sm:grid-cols-2 sm:items-start sm:gap-16 sm:p-12"
           >
@@ -354,13 +364,13 @@ export default function VodafoneWebPlatformCaseStudy() {
                 </svg>
               </span>
             </div>
-          </a>
+          </Link>
         </div>
       </section>
 
       {/* A few more functionalities — the extra B2B work shipped alongside the
           split. Alternating rows so the list reads as a zig-zag. */}
-      <section className="pb-[100px]">
+      <section id="more" data-detail className="pb-[100px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>Also a few more functionalities</h2>
@@ -398,7 +408,7 @@ export default function VodafoneWebPlatformCaseStudy() {
       </section>
 
       {/* How we measure success — closing quote + award / team photo. */}
-      <section className="pb-[120px]">
+      <section data-detail className="pb-[120px]">
         <div className={SHELL}>
           <div className="grid grid-cols-1 gap-x-16 gap-y-6 lg:grid-cols-2 lg:items-start">
             <h2 className={T.section}>How we measure success</h2>
@@ -437,17 +447,10 @@ export default function VodafoneWebPlatformCaseStudy() {
         </div>
       </section>
 
-      {/* Other projects — sits on the surface-2 panel, matching the home page's
-          video section background. */}
-      <section className="bg-surface-2 pt-[100px] pb-[120px]">
-        <div className={SHELL}>
-          <h2 className={`mb-[70px] ${T.section}`}>Other projects</h2>
-          <div className="flex flex-col gap-[140px]">
-            {OTHER_PROJECTS.map((p) => (
-              <Card key={p.title} project={p} />
-            ))}
-          </div>
-        </div>
+      {/* Other projects — the home page's side-scrolling board, cases and
+          stats only (this case left out). */}
+      <section>
+        <OtherProjects exclude="/work/vodafone-webplatform" />
       </section>
 
       {/* Contact — the same final block as the home page. */}
@@ -456,9 +459,9 @@ export default function VodafoneWebPlatformCaseStudy() {
       {/* Footer. */}
       <footer className="border-t border-line py-8">
         <div className={`${SHELL} flex items-center justify-between ${T.label} text-sol-dim`}>
-          <a href="/" className="transition-colors hover:text-accent">
+          <Link href="/" className="transition-colors hover:text-accent">
             Home
-          </a>
+          </Link>
           <span>© 2025</span>
         </div>
       </footer>
