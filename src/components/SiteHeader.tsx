@@ -46,10 +46,10 @@ export function SiteHeader() {
     >
       <div className={SHELL}>
         <div className="flex items-center justify-between py-5">
-          <a href="#top" className="flex items-center gap-3">
+          <a href="#top" className="flex items-center gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logos/logo.svg" alt="" className="h-10 w-10" aria-hidden />
-            <span className="font-serif text-[20px] font-medium tracking-tight text-sol">
+            <span className="font-sans text-[20px] text-sol">
               a.barchenko
             </span>
           </a>

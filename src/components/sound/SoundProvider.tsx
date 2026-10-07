@@ -34,6 +34,9 @@ type SoundContextValue = {
   speak: (text: string, perCharMs?: number) => void;
   stopSpeaking: () => void;
   enabled: boolean;
+  /* Sound is on AND the browser has let audio start (after the first
+     gesture) — i.e. the site is actually audible right now. */
+  audible: boolean;
   setEnabled: (value: boolean) => void;
   toggle: () => void;
 };
@@ -63,6 +66,7 @@ const SoundContext = createContext<SoundContextValue>({
   speak: noop,
   stopSpeaking: noop,
   enabled: false,
+  audible: false,
   setEnabled: noop,
   toggle: noop,
 });
@@ -73,6 +77,8 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   const [enabled, setEnabledState] = useState(true);
   // Audio can't make a sound until a real gesture resumes the AudioContext.
   const unlocked = useRef(false);
+  // Render-facing mirror of `unlocked`, for the header's playing indicator.
+  const [unlockedState, setUnlockedState] = useState(false);
   const hoverCapable = useRef(false);
   const lastShift = useRef(0);
 
@@ -89,6 +95,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
     const unlock = () => {
       unlocked.current = true;
+      setUnlockedState(true);
       void player.unlock();
       void getAudioContext()?.resume();
       if (player.isEnabled()) startAmbient(player.getVolume());
@@ -160,6 +167,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     if (value) {
       // Toggling on is itself a gesture — unlock, then confirm it's audible.
       unlocked.current = true;
+      setUnlockedState(true);
       void player.unlock();
       player.setEnabled(true);
       player.play(CUE.soundOn);
@@ -181,7 +189,17 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SoundContext.Provider
-      value={{ play, playHover, playShift, speak, stopSpeaking, enabled, setEnabled, toggle }}
+      value={{
+        play,
+        playHover,
+        playShift,
+        speak,
+        stopSpeaking,
+        enabled,
+        audible: enabled && unlockedState,
+        setEnabled,
+        toggle,
+      }}
     >
       {children}
     </SoundContext.Provider>

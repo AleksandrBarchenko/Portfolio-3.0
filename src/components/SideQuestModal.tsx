@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Avatar } from "@/components/Avatar";
-import { useOpenCloseSound } from "@/components/sound/SoundProvider";
+import { useOpenCloseSound, useRobotVoice } from "@/components/sound/SoundProvider";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+const BLURB_MS_PER_CHAR = 20;
 
 /* The avatar (orb on the 1st tab, TV head on the 2nd) draws a zero-size first
    frame if it initialises against a 0×0 mount. So we only mount it once the
@@ -155,7 +156,7 @@ export default function SideQuestModal({
     let raf = 0;
     let startTs = 0;
     const delay = 260; // let the panel settle in before typing starts
-    const perChar = 20;
+    const perChar = BLURB_MS_PER_CHAR;
     const step = (now: number) => {
       if (!startTs) startTs = now;
       const n = Math.max(
@@ -171,6 +172,9 @@ export default function SideQuestModal({
 
   const shown = blurb.slice(0, typed);
   const typing = !reduce && open && typed < blurb.length;
+  // The head babbles along from the first typed character (not during the
+  // settle-in delay) until the blurb is complete.
+  useRobotVoice(typing && typed > 0, blurb, quest, BLURB_MS_PER_CHAR);
 
   // Escape to close + lock background scroll while open.
   useEffect(() => {
@@ -211,7 +215,7 @@ export default function SideQuestModal({
           {/* Panel — translucent surface with a background blur, per the design
               (flips with the theme via the --panel token). */}
           <motion.div
-            className="relative flex h-full max-h-[820px] w-full max-w-[1440px] items-center justify-center overflow-hidden rounded-3xl bg-white/30 font-sans text-sol shadow-2xl backdrop-blur-xl lg:h-[80vh] lg:max-h-[80vh] lg:w-[80vw] lg:max-w-[80vw]"
+            className="relative flex h-full max-h-[820px] w-full max-w-[1440px] items-center justify-center overflow-hidden rounded-3xl bg-white/75 font-sans text-sol shadow-2xl backdrop-blur-xl lg:h-[80vh] lg:max-h-[80vh] lg:w-[80vw] lg:max-w-[80vw]"
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}

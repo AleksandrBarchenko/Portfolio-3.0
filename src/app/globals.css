@@ -16,8 +16,8 @@
   --surface-2: #fbf6f2;
   --sol: #252525;
   --sol-dim: #5d5d5d;
-  --accent: #e94245;
-  --accent-2: #e94245;
+  --accent: #926868;
+  --accent-2: #926868;
   --logo: #7f7f7f;
   --pill: rgba(178, 178, 178, 0.15);
   --panel: #ececec;
@@ -187,7 +187,7 @@ html[data-full] [data-short] {
     box-shadow:
       0 calc(var(--u, 8px) * var(--lift, 2) * var(--press) * 1.2)
         calc(var(--u, 8px) * var(--lift, 2) * var(--press) * 2.6)
-        calc(var(--u, 8px) * -1) rgb(233 66 69 / 0.16),
+        calc(var(--u, 8px) * -1) rgb(146 104 104 / 0.16),
       0 calc(var(--u, 8px) * 0.25) calc(var(--u, 8px) * 0.7) rgb(0 0 0 / 0.06);
     transition: box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   }
@@ -197,6 +197,31 @@ html[data-full] [data-short] {
 }
 @media (prefers-reduced-motion: reduce) {
   .levitate {
+    animation: none;
+  }
+}
+
+/* Header sound indicator: four equalizer bars bounce while the site is audible
+   (each on its own period so they never move in step), sit still when sound is
+   on but not yet started, and lie flat when muted. */
+@keyframes eq-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.eq-bar {
+  transform-origin: bottom;
+  transition: transform 0.35s ease;
+}
+[data-eq="playing"] .eq-bar {
+  animation: eq-bounce var(--eq-dur, 0.9s) ease-in-out var(--eq-delay, 0s) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-eq="playing"] .eq-bar {
     animation: none;
   }
 }

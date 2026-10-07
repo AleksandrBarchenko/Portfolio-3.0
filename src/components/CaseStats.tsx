@@ -589,7 +589,7 @@ export function Figure({
       paint({
         ctx,
         size,
-        accent: accentColor ?? (css.getPropertyValue("--accent").trim() || "#e94245"),
+        accent: accentColor ?? (css.getPropertyValue("--accent").trim() || "#926868"),
         sol: solColor ?? (css.getPropertyValue("--sol").trim() || "#252525"),
         value,
         sweep: easeInOut(clamp01(el / SWEEP)),

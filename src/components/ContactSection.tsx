@@ -18,6 +18,10 @@ import { useAvatarMode } from "@/components/AvatarMode";
 const CTA_LINE =
   "Have a project in mind\nyou need a help with?\nLet’s move it together";
 const SPEECH_W = 380;
+// The visitor's face shown on the TV-head screen in place of the vector face —
+// the real headshot remapped into the robot's amber CRT palette (see
+// .context/robotize.py) so the expression is kept but the style matches.
+const CONTACT_PHOTO = "/face/alex-robot.png";
 
 function Caret() {
   return (
@@ -159,7 +163,11 @@ function ContactOrb({ listening, reply }: { listening: boolean; reply: Reply | n
       style={{ transform: `translate(${-grow / 2}px, -78px)` }}
     >
       <div className="relative aspect-square" style={{ width: size }}>
-        <Avatar state={state} />
+        <Avatar
+          state={state}
+          screenMediaSrc={face ? CONTACT_PHOTO : undefined}
+          screenMediaActive={face}
+        />
       </div>
       <p
         aria-live="polite"
@@ -176,10 +184,16 @@ function ContactOrb({ listening, reply }: { listening: boolean; reply: Reply | n
 }
 
 function MobileOrb() {
+  const { mode } = useAvatarMode();
+  const face = mode === "face";
   return (
     <div className="mb-10 flex flex-col items-center lg:hidden">
       <div className="relative aspect-square w-[min(70vw,260px)]">
-        <Avatar state="idle" />
+        <Avatar
+          state="idle"
+          screenMediaSrc={face ? CONTACT_PHOTO : undefined}
+          screenMediaActive={face}
+        />
       </div>
       <p className="-mt-[3px] max-w-[320px] whitespace-pre-line text-center text-[20px] leading-7 text-sol-dim">
         {CTA_LINE}
@@ -214,7 +228,7 @@ export function ContactSection({
             onBlur={() => setListening(false)}
           >
             <div className="flex flex-col gap-14">
-              <div className="flex flex-col gap-4 text-[clamp(26px,3vw,36px)] leading-[1.2] text-accent-2">
+              <div className="flex flex-col gap-4 font-serif text-[clamp(26px,3vw,36px)] leading-[1.2] text-accent-2">
                 <CopyLink
                   href="mailto:alex.barcenko@gmail.com"
                   value="alex.barcenko@gmail.com"

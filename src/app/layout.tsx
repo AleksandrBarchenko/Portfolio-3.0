@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Onest, Orbitron, IBM_Plex_Mono, Playfair_Display } from "next/font/google";
+import { Onest, Orbitron, IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { SoundProvider } from "@/components/sound/SoundProvider";
 
@@ -9,13 +10,18 @@ const onest = Onest({
   display: "swap",
 });
 
-// Playfair Display — the wordmark, the italic "feelings"/"View use case" accents.
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal", "italic"],
+// Special Elite — the wordmark, the italic "feelings"/"View use case" accents.
+// Its glyphs are much wider than Onest's, so size-adjust scales it across every
+// `font-serif` usage. 83% is the most it can take while the hero keeps
+// "Creating feelings" on one line and the skills intro stays at two lines
+// (it needs 879px of its 890px max-width; 84% would leave 1px).
+const specialElite = localFont({
+  src: "./fonts/special-elite-400.woff2",
+  weight: "400",
+  style: "normal",
   variable: "--font-serif",
   display: "swap",
+  declarations: [{ prop: "size-adjust", value: "83%" }],
 });
 
 const orbitron = Orbitron({
@@ -53,7 +59,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${onest.variable} ${orbitron.variable} ${plexMono.variable} ${playfair.variable}`}
+      className={`${onest.variable} ${orbitron.variable} ${plexMono.variable} ${specialElite.variable}`}
     >
       <head>
         {/* Resolve the theme before first paint so there's no flash. Falls back

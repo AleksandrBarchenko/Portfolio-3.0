@@ -4,6 +4,7 @@ import { SHELL } from "@/components/shell";
 import { CaseHeader } from "@/components/CaseHeader";
 import { ContactSection } from "@/components/ContactSection";
 import { OtherProjects } from "@/components/WorksBoard";
+import { ExternalArrowLink } from "@/components/ExternalArrowLink";
 
 export const metadata: Metadata = {
   title: "Reflexion × Under Armour — cognitive training app & website · a.barchenko",
@@ -110,18 +111,9 @@ export default function ReflexionCaseStudy() {
             ))}
           </dl>
 
-          <a
-            href="https://reflexion.co/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group mt-14 inline-flex items-center gap-2.5"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/projects/arrow.svg" alt="" className="h-[34px] w-[26px]" aria-hidden />
-            <span className="font-serif text-[32px] italic text-accent transition-opacity group-hover:opacity-70">
-              View website
-            </span>
-          </a>
+          <ExternalArrowLink href="https://reflexion.co/" className="mt-14">
+            View website
+          </ExternalArrowLink>
         </div>
       </section>
 

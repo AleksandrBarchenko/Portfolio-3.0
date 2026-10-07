@@ -31,11 +31,13 @@ export function CaseHeader({ progress: showProgress = true }: { progress?: boole
               play(CUE.leaveCase);
               sessionStorage.removeItem(LAST_CASE_KEY);
             }}
-            className="flex items-center gap-3"
+            className="flex items-center gap-4"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logos/logo.svg" alt="" className="h-10 w-10" aria-hidden />
-            <span className="font-serif text-[20px] font-medium tracking-tight text-sol">
+            {/* Below 430px the wordmark collides with "[ back to work ]"; the
+                mark alone still reads as the home link. */}
+            <span className="hidden font-sans text-[20px] text-sol min-[430px]:inline">
               a.barchenko
             </span>
           </Link>

@@ -4,6 +4,7 @@ import { SHELL } from "@/components/shell";
 import { CaseHeader } from "@/components/CaseHeader";
 import { ContactSection } from "@/components/ContactSection";
 import { OtherProjects } from "@/components/WorksBoard";
+import { ExternalArrowLink } from "@/components/ExternalArrowLink";
 
 export const metadata: Metadata = {
   title: "ElioVP — comprehensive web experience · a.barchenko",
@@ -107,18 +108,9 @@ export default function EliovpCaseStudy() {
             ))}
           </dl>
 
-          <a
-            href="https://eliovp.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group mt-14 inline-flex items-center gap-2.5"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/projects/arrow.svg" alt="" className="h-[34px] w-[26px]" aria-hidden />
-            <span className="font-serif text-[32px] italic text-accent transition-opacity group-hover:opacity-70">
-              View website
-            </span>
-          </a>
+          <ExternalArrowLink href="https://eliovp.com" className="mt-14">
+            View website
+          </ExternalArrowLink>
         </div>
       </section>
 

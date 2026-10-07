@@ -10,12 +10,14 @@ import {
 } from "framer-motion";
 import { Avatar } from "@/components/Avatar";
 import { useRobotVoice, useSound } from "@/components/sound/SoundProvider";
+import { SoundBars, useSoundState } from "@/components/sound/SoundToggle";
 import type { OrbState } from "@/types/orb";
 import { SHELL } from "@/components/SiteHeader";
 import Projects from "@/components/Projects";
 import Skills from "@/components/Skills";
 import VideoModal from "@/components/VideoModal";
 import { ContactSection } from "@/components/ContactSection";
+import { DecryptText } from "@/components/DecryptText";
 import { INTRO_SEEN_KEY, LAST_CASE_KEY } from "@/components/nav-memory";
 import { useActiveSection, PAGE_BG, BG_TRANSITION } from "@/components/ActiveSection";
 import { useAvatarMode } from "@/components/AvatarMode";
@@ -213,7 +215,7 @@ export default function Experience() {
   const [speaking, setSpeaking] = useState(true);
   const spoken = useRef({ video: false, cta: false });
   // Browsers keep audio silent until a click, so the greeting always types
-  // mute on load. The intro offers a hint; clicking it turns sound on and says
+  // mute on load. The intro offers a hint; clicking (anywhere) turns sound on and says
   // the greeting again (`take` restarts the typing + voice) — out loud.
   const [take, setTake] = useState(0);
   const [heard, setHeard] = useState(false);
@@ -225,6 +227,23 @@ export default function Experience() {
     setTake((n) => n + 1);
     setSpeaking(true);
   };
+  const soundHint = phase === "intro" && !heard && !reduce;
+  const soundState = useSoundState();
+
+  // While the hint is up, a click anywhere on the page counts as "yes, sound" —
+  // except on links and controls (nav, theme/sound toggles, the hint itself),
+  // which do their own thing.
+  useEffect(() => {
+    if (!soundHint) return;
+    const onClick = (e: MouseEvent) => {
+      const t = e.target instanceof Element ? e.target : null;
+      if (t?.closest("a, button, input, textarea, select, label, [role='switch']")) return;
+      hearGreeting();
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [soundHint, soundOn]);
 
   const orb = useAnimationControls();
   const speech = useAnimationControls();
@@ -681,32 +700,21 @@ export default function Experience() {
       )}
 
       <AnimatePresence>
-        {phase === "intro" && !heard && !reduce && (
+        {soundHint && (
           <motion.button
             type="button"
             onClick={hearGreeting}
-            className="fixed bottom-10 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full px-4 py-2 text-[15px] text-sol-dim transition-colors hover:text-sol"
+            className="fixed bottom-10 left-1/2 z-30 flex -translate-x-1/2 w-max max-w-[calc(100vw-2rem)] items-center gap-3 rounded-full px-4 py-2 text-center text-[15px] text-sol-dim transition-colors hover:text-sol"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0, transition: { delay: 0.6, duration: 0.5, ease: EASE } }}
             exit={{ opacity: 0, transition: { duration: 0.3 } }}
           >
-            {/* Speaker with waves — same glyph as the header's SoundToggle */}
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M4 9v6h4l5 4V5L8 9H4z" />
-              <path d="M16.5 8.5a5 5 0 0 1 0 7" />
-              <path d="M19 6a9 9 0 0 1 0 12" />
-            </svg>
-            click here if you want to hear the sound
+            To allow the sound - click anywhere. Control it in the top right corner
+            {/* Same equalizer as the header's sound switch, so the visitor
+                knows what to look for up there. */}
+            <span data-eq={soundState} className="flex">
+              <SoundBars state={soundState} />
+            </span>
           </motion.button>
         )}
       </AnimatePresence>
@@ -740,7 +748,11 @@ export default function Experience() {
         >
           <h1 className="text-[clamp(38px,4.6vw,68px)] font-light leading-[1.18] tracking-[-0.01em] text-sol">
             Creating{" "}
-            <span className="font-serif font-normal italic text-accent">feelings</span>
+            <DecryptText
+              text="feelings"
+              active={phase === "ready" && active === "hero" && heroContentIn}
+              className="font-serif font-normal italic text-accent"
+            />
             <br />
             and making your
             <br />
