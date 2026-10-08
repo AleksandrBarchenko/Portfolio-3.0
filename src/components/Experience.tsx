@@ -228,7 +228,10 @@ export default function Experience() {
     setTake((n) => n + 1);
     setSpeaking(true);
   };
-  const soundHint = phase === "intro" && !heard && !reduce;
+  // The hint stays up through the hero and goes away for good once the visitor
+  // scrolls on to the video section (or never shows, when the intro is skipped).
+  const [hintDone, setHintDone] = useState(false);
+  const soundHint = !hintDone && !heard && !reduce;
   const soundState = useSoundState();
 
   // While the hint is up, a click anywhere on the page counts as "yes, sound" —
@@ -290,7 +293,12 @@ export default function Experience() {
     setHeroContentIn(true);
     setPhase("ready");
     setScrollLocked(false);
+    setHintDone(true);
   }, []);
+
+  useEffect(() => {
+    if (active !== "hero") setHintDone(true);
+  }, [active]);
 
   useEffect(() => {
     if (phase !== "ready") return;
