@@ -1,10 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useSound } from "@/components/sound/SoundProvider";
 
 /* Retypes its text one character at a time whenever the pointer enters, with a
-   blinking caret. A hidden copy of the full text reserves the width so nothing
-   around it shifts while the visible copy types out. Respects reduced motion. */
+   blinking caret and a soft typewriter click per key. A hidden copy of the full
+   text reserves the width so nothing around it shifts while the visible copy
+   types out. Respects reduced motion. */
 export function TypeOnHover({
   text,
   className,
@@ -15,6 +17,7 @@ export function TypeOnHover({
   /* ms per character */
   speed?: number;
 }) {
+  const { playKey } = useSound();
   const [shown, setShown] = useState(text);
   const [typing, setTyping] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -33,6 +36,8 @@ export function TypeOnHover({
     timer.current = setInterval(() => {
       i += 1;
       setShown(text.slice(0, i));
+      // Spaces are typed silently, which gives the clatter a natural rhythm.
+      if (text[i - 1] !== " ") playKey();
       if (i >= text.length) {
         clear();
         setTyping(false);

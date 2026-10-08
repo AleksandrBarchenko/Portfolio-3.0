@@ -16,7 +16,11 @@ import {
   getSoundPlayer,
 } from "./uisfx-client";
 import { TYPE_MS_PER_CHAR } from "./robot-voice";
-import { playShift as synthShift } from "./shift-sound";
+import {
+  playShift as synthShift,
+  playSoftShift as synthSoftShift,
+} from "./shift-sound";
+import { playKey as synthKey } from "./key-sound";
 import { CUE, openCloseCue } from "./sound-events";
 
 type SoundContextValue = {
@@ -29,6 +33,12 @@ type SoundContextValue = {
   /* The "shh" of a use-case card shifting under the cursor. Same gating as
      `playHover`. */
   playShift: () => void;
+  /* A softer, airier shift for the skill photos. Same gating and cooldown as
+     `playShift`. */
+  playSoftShift: () => void;
+  /* One typewriter key, for text typing itself out on hover. Same gating as
+     `playHover`; no cooldown, since each call is one typed character. */
+  playKey: () => void;
   /* Robo-babble along with a line typing out at `perCharMs`. Same gating as
      `play`: silent on the server, when muted, or before the audio unlock. */
   speak: (text: string, perCharMs?: number) => void;
@@ -47,6 +57,10 @@ const noop = () => {};
 const VOICE_LEVEL = 0.45;
 /* Shift "shh" peak relative to the player volume. */
 const SHIFT_LEVEL = 0.22;
+/* Soft shift sits well under the shh — the photo should feel weightless. */
+const SOFT_SHIFT_LEVEL = 0.14;
+/* Key clicks are many and close together, so each one is kept small. */
+const KEY_LEVEL = 0.12;
 /* Gap below which a second shh is dropped, so sweeping across the board
    doesn't hiss continuously. */
 const SHIFT_COOLDOWN_MS = 140;
@@ -63,6 +77,8 @@ const SoundContext = createContext<SoundContextValue>({
   play: noop,
   playHover: noop,
   playShift: noop,
+  playSoftShift: noop,
+  playKey: noop,
   speak: noop,
   stopSpeaking: noop,
   enabled: false,
@@ -138,15 +154,38 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     [play],
   );
 
-  const playShift = useCallback(() => {
+  /* Shared gating for the synthesized shifts: hover-capable, unlocked, on, and
+     outside the cooldown. */
+  const shift = useCallback(
+    (synth: (ctx: AudioContext, level: number) => void, level: number) => {
+      const player = getSoundPlayer();
+      const ctx = getAudioContext();
+      if (!player || !ctx || !unlocked.current || !hoverCapable.current) return;
+      if (!player.isEnabled()) return;
+      const now = performance.now();
+      if (now - lastShift.current < SHIFT_COOLDOWN_MS) return;
+      lastShift.current = now;
+      synth(ctx, level * player.getVolume());
+    },
+    [],
+  );
+
+  const playShift = useCallback(
+    () => shift(synthShift, SHIFT_LEVEL),
+    [shift],
+  );
+
+  const playSoftShift = useCallback(
+    () => shift(synthSoftShift, SOFT_SHIFT_LEVEL),
+    [shift],
+  );
+
+  const playKey = useCallback(() => {
     const player = getSoundPlayer();
     const ctx = getAudioContext();
     if (!player || !ctx || !unlocked.current || !hoverCapable.current) return;
     if (!player.isEnabled()) return;
-    const now = performance.now();
-    if (now - lastShift.current < SHIFT_COOLDOWN_MS) return;
-    lastShift.current = now;
-    synthShift(ctx, SHIFT_LEVEL * player.getVolume());
+    synthKey(ctx, KEY_LEVEL * player.getVolume());
   }, []);
 
   const speak = useCallback(
@@ -193,6 +232,8 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
         play,
         playHover,
         playShift,
+        playSoftShift,
+        playKey,
         speak,
         stopSpeaking,
         enabled,

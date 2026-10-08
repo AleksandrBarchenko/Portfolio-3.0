@@ -242,13 +242,23 @@ export function ContactSection({
                   onCopy={() => react(REPLIES.phone)}
                 />
               </div>
-              <div className="flex flex-col gap-10 text-[18px] text-sol">
+              <div className="flex flex-col gap-10 font-serif text-[20px] text-sol">
                 <span>.based in Portugal</span>
-                <a href="#" className="w-fit">
-                  <TypeOnHover text="{ behance }" />
+                <a
+                  href="https://www.behance.net/aleksandrb0778"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-fit"
+                >
+                  <TypeOnHover text="/ behance" />
                 </a>
-                <a href="#" className="w-fit">
-                  <TypeOnHover text="{ linkedin }" />
+                <a
+                  href="https://www.linkedin.com/in/aleksandr-barchenko"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-fit"
+                >
+                  <TypeOnHover text="/ linkedin" />
                 </a>
               </div>
             </div>

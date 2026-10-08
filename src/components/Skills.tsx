@@ -1,11 +1,15 @@
+"use client";
+
 import { SHELL } from "@/components/SiteHeader";
+import { useSound } from "@/components/sound/SoundProvider";
 
 /* The "what I can help with" page (Figma nodes 899:5223 / 899:5247). A serif
    italic intro over a big list of skill words separated by accent dots.
    Hovering a word dims the rest to 20%. Words that have a matching torn-paper
    photo (named after the word) float it over the word on hover: the word stays
    dark, the photo gets a dark tint, and the letters that fall over the photo
-   invert to white. Words without a matching image just dim the rest. */
+   invert to white, with a soft airy whoosh (a gentler cousin of the work
+   cards' "shh"). Words without a matching image just dim the rest. */
 const INTRO =
   "I’m Lead Product Designer with 8+ years crafting impactful user experiences for B2C, SaaS, Mobile & Web, so i can help you with:";
 
@@ -39,6 +43,8 @@ function Dot() {
 }
 
 function Word({ word, img, rot }: Skill) {
+  const { playSoftShift } = useSound();
+
   /* Clip the tint + white text to the torn photo's exact shape (contain +
      centred = same box the photo is drawn in), so both line up with the img. */
   const clip: React.CSSProperties = img
@@ -60,7 +66,7 @@ function Word({ word, img, rot }: Skill) {
      them; their own hover (`!`) overrides the container dim. */
   return (
     <span
-      {...(img ? { "data-photo": "" } : {})}
+      {...(img ? { "data-photo": "", onPointerEnter: playSoftShift } : {})}
       className={`group/word relative inline-flex items-center transition-opacity duration-300 ${DIM} ${
         img ? "hover:!opacity-100 hover:z-20" : ""
       }`}

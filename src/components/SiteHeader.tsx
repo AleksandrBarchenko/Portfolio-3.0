@@ -54,7 +54,7 @@ export function SiteHeader() {
             </span>
           </a>
           <div className="flex items-center gap-6 sm:gap-10">
-            <nav className="hidden items-center gap-10 text-[18px] sm:flex">
+            <nav className="hidden items-center gap-10 font-serif text-[20px] sm:flex">
               {NAV.map((item) => {
                 const isActive = item.match.includes(active);
                 return (

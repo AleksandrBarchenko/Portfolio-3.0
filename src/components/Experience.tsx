@@ -18,6 +18,7 @@ import Skills from "@/components/Skills";
 import VideoModal from "@/components/VideoModal";
 import { ContactSection } from "@/components/ContactSection";
 import { DecryptText } from "@/components/DecryptText";
+import { AsciiFlock } from "@/components/AsciiFlock";
 import { INTRO_SEEN_KEY, LAST_CASE_KEY } from "@/components/nav-memory";
 import { useActiveSection, PAGE_BG, BG_TRANSITION } from "@/components/ActiveSection";
 import { useAvatarMode } from "@/components/AvatarMode";
@@ -649,6 +650,7 @@ export default function Experience() {
   }, [vw, vh]);
 
   const orbState: OrbState = speaking ? "replying" : "idle";
+  const flockOn = active === "hero" || active === "video" || active === "cta";
   const displayText = speaking ? line.slice(0, typed) : line;
   const g = geom(vw, vh, face);
 
@@ -661,6 +663,25 @@ export default function Experience() {
         className={`fixed inset-0 -z-10 ${BG_TRANSITION}`}
         style={{ backgroundColor: PAGE_BG[active] }}
       />
+
+      {/* Cursor-following ASCII flock: ONE fixed layer just above the page
+          backdrop and below every page, so the same swarm carries on from the
+          hero into the video page instead of each page having its own. It
+          fades out (and pauses) over the work and skills pages, and picks up
+          again on the closing contact page. */}
+      <div
+        aria-hidden
+        className={`pointer-events-none fixed inset-0 -z-[5] transition-opacity duration-700 ease-in-out ${
+          flockOn ? "opacity-25" : "opacity-0"
+        }`}
+      >
+        {/* Softened at the top and bottom so the grid melts into the header
+            and the viewport edge rather than ending on a hard line. */}
+        <AsciiFlock
+          running={flockOn}
+          className="h-full w-full [mask-image:linear-gradient(to_bottom,transparent,#000_12%,#000_88%,transparent)]"
+        />
+      </div>
 
       {desktop && (
         <motion.div
