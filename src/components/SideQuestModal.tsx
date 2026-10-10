@@ -262,7 +262,7 @@ export default function SideQuestModal({
 
             {/* Mobile / tablet — stacked and scrollable. */}
             <div className="flex flex-1 flex-col items-center gap-8 overflow-y-auto px-6 pb-10 pt-20 lg:hidden">
-              <ModalAvatar className="aspect-square w-52 max-w-[60%]" />
+              <ModalAvatar className="aspect-square w-[260px] max-w-[75%]" />
               <TypingBlurb
                 blurb={blurb}
                 shown={shown}

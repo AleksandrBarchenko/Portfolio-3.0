@@ -15,7 +15,7 @@ import { CUE } from "@/components/sound/sound-events";
    pages that don't scroll (404), where the bar would just sit full. */
 export function CaseHeader({ progress: showProgress = true }: { progress?: boolean }) {
   const reduce = useReducedMotion();
-  const { play, playHover } = useSound();
+  const { play } = useSound();
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 220, damping: 32, mass: 0.4 });
 
@@ -45,8 +45,7 @@ export function CaseHeader({ progress: showProgress = true }: { progress?: boole
             <Link
               href="/#projects"
               onClick={() => play(CUE.leaveCase)}
-              onPointerEnter={() => playHover()}
-              className="whitespace-nowrap text-[18px] text-sol transition-colors hover:text-accent"
+              className="whitespace-nowrap font-serif text-[20px] text-sol transition-colors hover:text-accent"
             >
               <TypeOnHover text="[ back to work ]" />
             </Link>

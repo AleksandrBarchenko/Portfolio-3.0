@@ -228,10 +228,12 @@ export default function Experience() {
     setTake((n) => n + 1);
     setSpeaking(true);
   };
-  // The hint stays up through the hero and goes away for good once the visitor
-  // scrolls on to the video section (or never shows, when the intro is skipped).
+  // On desktop the hint stays up through the hero and goes away for good once
+  // the visitor scrolls on to the video section (or never shows, when the intro
+  // is skipped). On mobile it would sit over the hero copy, so it only lives
+  // through the intro greeting there.
   const [hintDone, setHintDone] = useState(false);
-  const soundHint = !hintDone && !heard && !reduce;
+  const soundHint = !hintDone && !heard && !reduce && (desktop || phase === "intro");
   const soundState = useSoundState();
 
   // While the hint is up, a click anywhere on the page counts as "yes, sound" —
@@ -773,7 +775,7 @@ export default function Experience() {
                 : 24,
           }}
           transition={{ duration: 0.7, ease: EASE }}
-          className="flex flex-col gap-16"
+          className="flex flex-col gap-8 lg:gap-16"
         >
           <h1 className="text-[clamp(38px,4.6vw,68px)] font-light leading-[1.18] tracking-[-0.01em] text-sol">
             Creating{" "}
@@ -785,22 +787,22 @@ export default function Experience() {
             <br />
             and making your
             <br />
-            business growth
+            business grow
           </h1>
-          <div className="grid max-w-[620px] grid-cols-3 items-center gap-x-6 gap-y-10 lg:-translate-x-10">
+          <div className="grid max-w-[620px] grid-cols-3 items-center gap-x-4 gap-y-6 lg:-translate-x-10 lg:gap-x-6 lg:gap-y-10">
             {LOGO_GRID.map((name, i) => (
-              <div key={i} className="flex h-[62px] items-center justify-center">
+              <div key={i} className="flex h-[46px] items-center lg:h-[62px] justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={LOGOS[name].light}
                   alt={name}
-                  className="max-h-[58px] w-auto max-w-[168px] object-contain dark:hidden"
+                  className="max-h-[44px] w-auto max-w-[126px] object-contain dark:hidden lg:max-h-[58px] lg:max-w-[168px]"
                 />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={LOGOS[name].dark}
                   alt={name}
-                  className="hidden max-h-[58px] w-auto max-w-[168px] object-contain dark:block"
+                  className="hidden max-h-[44px] w-auto max-w-[126px] object-contain dark:block lg:max-h-[58px] lg:max-w-[168px]"
                 />
               </div>
             ))}
@@ -955,7 +957,7 @@ function MobileOrb({
 }) {
   return (
     <div className="mb-10 flex flex-col items-center lg:hidden">
-      <div className="relative aspect-square w-[min(70vw,260px)]">
+      <div className="relative aspect-square w-[min(87.5vw,325px)]">
         <Avatar
           state={state}
           screenMediaSrc={screenMediaSrc}

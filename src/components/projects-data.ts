@@ -69,7 +69,7 @@ export const PROJECTS: Project[] = [
   {
     image: "/projects/electric-mobility.png",
     label: "website redesign",
-    period: "2024–2025",
+    period: "2025",
     title: "Comprehensive web experience for electric mobility solutions",
     body: BODY,
     tags: TAGS,
@@ -78,9 +78,9 @@ export const PROJECTS: Project[] = [
   },
   {
     image: "/projects/construction-saas.png",
-    label: "mobile app redesign",
+    label: "mobile app design",
     period: "2018–2020",
-    title: "End-to-end redesign for construction SaaS",
+    title: "End-to-end design for construction SaaS",
     body: BODY,
     tags: TAGS,
     align: "center",

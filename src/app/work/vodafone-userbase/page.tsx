@@ -9,9 +9,9 @@ import { OtherProjects } from "@/components/WorksBoard";
 import { CaseStats, type CaseStat } from "@/components/CaseStats";
 
 export const metadata: Metadata = {
-  title: "Vodafone app — increased active users base by 12% · a.barchenko",
+  title: "Vodafone app — increased active user base by 12% · a.barchenko",
   description:
-    "Case study: designing new functionalities for the My Vodafone app — growing the active users base by 12% and lifting the app store rating. Product design by Alex Barchenko.",
+    "Case study: designing new functionalities for the My Vodafone app — growing the active user base by 12% and lifting the app store rating. Product design by Alex Barchenko.",
 };
 
 /* Typography — the same single type scale as the first Vodafone case study so
@@ -61,7 +61,7 @@ const INFO = [
 
 /* Headline outcomes of the release — source order, verbatim numbers. */
 const IMPROVEMENTS: CaseStat[] = [
-  { value: 12, prefix: "+", suffix: "%", label: "Increased active users base", kind: "growth" },
+  { value: 12, prefix: "+", suffix: "%", label: "Increased active user base", kind: "growth" },
   { value: 0.2, prefix: "+", decimals: 1, label: "Boosted app store rating", kind: "rating" },
 ];
 
@@ -146,7 +146,7 @@ export default function VodafoneUserbaseCaseStudy() {
               </div>
 
               <h1 className={`mt-6 ${T.display}`}>
-                Increased active users base by 12% for Vodafone App
+                Increased active user base by 12% for Vodafone app
               </h1>
             </div>
 
@@ -624,11 +624,12 @@ export default function VodafoneUserbaseCaseStudy() {
             <h2 className={T.section}>How we measure success</h2>
             <blockquote>
               <p className={`${T.body} text-sol-dim`}>
-                We have exceeded our annual targets for both monthly and daily
-                active users, improved our marketplace rating, and increased
-                overall user satisfaction based on qualitative research.
-                Additionally, we received recognition for having the second-best
-                user experience among all Ukrainian apps.
+                Every new feature was measured against our yearly goals — and
+                both monthly and daily active users came in above target. Store
+                ratings went up, qualitative research showed people were more
+                satisfied with the app overall, and the work helped keep its
+                place among the best user experiences in Ukraine, recognized as
+                the second-best of all local apps.
               </p>
             </blockquote>
           </div>
@@ -661,7 +662,7 @@ export default function VodafoneUserbaseCaseStudy() {
           <Link href="/" className="transition-colors hover:text-accent">
             Home
           </Link>
-          <span>© 2025</span>
+          <span>© 2026</span>
         </div>
       </footer>
     </main>

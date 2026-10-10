@@ -362,13 +362,17 @@ export default function WorksBoard({
                   {it.kind === "work" && <WorkCard src={it.src} caption={it.caption} />}
                   {it.kind === "stat" && <StatCard item={it} seed={i} />}
                   {it.kind === "quest" && (
-                    <FloatingPhoto
-                      fill
-                      photo={it.photo}
-                      rotate={it.rot}
-                      ariaLabel={it.label}
-                      onClick={() => onQuest?.(it.quest)}
-                    />
+                    /* Bigger on mobile, grown about its centre so the board
+                       layout around it stays put. */
+                    <div className="max-lg:scale-125">
+                      <FloatingPhoto
+                        fill
+                        photo={it.photo}
+                        rotate={it.rot}
+                        ariaLabel={it.label}
+                        onClick={() => onQuest?.(it.quest)}
+                      />
+                    </div>
                   )}
                 </Placed>
               ))}

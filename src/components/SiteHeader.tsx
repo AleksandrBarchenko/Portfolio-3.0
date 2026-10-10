@@ -4,7 +4,6 @@
 import { TypeOnHover } from "./TypeOnHover";
 import { SHELL } from "./shell";
 import { useActiveSection, PAGE_BG, BG_TRANSITION } from "./ActiveSection";
-import { useSound } from "./sound/SoundProvider";
 import { SoundToggle } from "./sound/SoundToggle";
 
 /* Only three destinations. `match` lists the section ids that light this item
@@ -32,7 +31,6 @@ export { SHELL };
 export function SiteHeader() {
   // Same value that drives the page backdrop (see ActiveSection).
   const active = useActiveSection();
-  const { playHover } = useSound();
 
   return (
     <header
@@ -64,7 +62,6 @@ export function SiteHeader() {
                     target={item.external ? "_blank" : undefined}
                     rel={item.external ? "noopener noreferrer" : undefined}
                     aria-current={isActive ? "true" : undefined}
-                    onPointerEnter={() => playHover()}
                     className={`whitespace-nowrap transition-colors hover:text-accent ${
                       isActive ? "text-accent" : "text-sol"
                     }`}

@@ -9,7 +9,7 @@ import { OtherProjects } from "@/components/WorksBoard";
 import { CaseStats, type CaseStat } from "@/components/CaseStats";
 
 export const metadata: Metadata = {
-  title: "ZimaOne — end-to-end redesign for construction SaaS · a.barchenko",
+  title: "ZimaOne — end-to-end design for construction SaaS · a.barchenko",
   description:
     "Case study: end-to-end design of the ZimaOne mobile app, a multi-functional construction SaaS for file sharing and site observations. Product design by Alex Barchenko.",
 };
@@ -129,13 +129,13 @@ export default function ZimaOneCaseStudy() {
           <div className="grid grid-cols-1 gap-x-16 gap-y-8 lg:grid-cols-2 lg:items-end">
             <div>
               <div className={`flex items-center gap-[19px] ${T.label} text-sol`}>
-                <span>mobile app redesign</span>
+                <span>mobile app design</span>
                 <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />
                 <span>2018–2020</span>
               </div>
 
               <h1 className={`mt-6 ${T.display}`}>
-                End-to-end redesign for multi-functional construction SaaS
+                End-to-end design for construction SaaS
               </h1>
             </div>
 
@@ -431,7 +431,7 @@ export default function ZimaOneCaseStudy() {
           <Link href="/" className="transition-colors hover:text-accent">
             Home
           </Link>
-          <span>© 2025</span>
+          <span>© 2026</span>
         </div>
       </footer>
     </main>

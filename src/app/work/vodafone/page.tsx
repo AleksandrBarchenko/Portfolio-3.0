@@ -66,7 +66,7 @@ const INFO = [
 
 /* Headline outcomes of the redesign — source order, verbatim numbers. */
 const IMPROVEMENTS: CaseStat[] = [
-  { value: 14, prefix: "+", suffix: "%", label: "Increased active users base", kind: "growth" },
+  { value: 14, prefix: "+", suffix: "%", label: "Increased active user base", kind: "growth" },
   { value: 0.5, prefix: "+", decimals: 1, label: "Boosted app store rating", kind: "rating" },
   { value: 17, prefix: "+", suffix: "%", label: "Increased basic flows success rate", kind: "success" },
   { value: 23, prefix: "−", suffix: "%", label: "Reduced call center load", kind: "load" },
@@ -159,7 +159,7 @@ export default function VodafoneCaseStudy() {
               </div>
 
               <h1 className={`mt-6 ${T.display}`}>
-                Increased basic flows success rate by 17% for Vodafone App
+                Increased basic flows success rate by 17% for Vodafone app
               </h1>
             </div>
 
@@ -444,7 +444,7 @@ export default function VodafoneCaseStudy() {
           <Link href="/" className="transition-colors hover:text-accent">
             Home
           </Link>
-          <span>© 2025</span>
+          <span>© 2026</span>
         </div>
       </footer>
     </main>

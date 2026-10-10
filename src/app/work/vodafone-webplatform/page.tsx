@@ -462,7 +462,7 @@ export default function VodafoneWebPlatformCaseStudy() {
           <Link href="/" className="transition-colors hover:text-accent">
             Home
           </Link>
-          <span>© 2025</span>
+          <span>© 2026</span>
         </div>
       </footer>
     </main>

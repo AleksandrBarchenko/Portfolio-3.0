@@ -188,7 +188,7 @@ function MobileOrb() {
   const face = mode === "face";
   return (
     <div className="mb-10 flex flex-col items-center lg:hidden">
-      <div className="relative aspect-square w-[min(70vw,260px)]">
+      <div className="relative aspect-square w-[min(87.5vw,325px)]">
         <Avatar
           state="idle"
           screenMediaSrc={face ? CONTACT_PHOTO : undefined}

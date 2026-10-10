@@ -150,6 +150,16 @@ export function StorySwitch() {
               aria-label="Case study length"
               className="relative grid w-full max-w-[440px] grid-cols-2 rounded-full border border-sol/15 bg-paper p-1"
             >
+              {/* One thumb that slides within the track. (A shared-layout
+                  thumb animated between page positions, and since toggling
+                  folds content above the switch, it flew in from afar.) */}
+              <motion.span
+                aria-hidden
+                className="absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-sol"
+                initial={false}
+                animate={{ x: full ? "100%" : "0%" }}
+                transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 36 }}
+              />
               {(["short", "full"] as const).map((m) => {
                 const on = mode === m;
                 return (
@@ -163,16 +173,6 @@ export function StorySwitch() {
                       on ? "text-paper" : "text-sol hover:text-accent"
                     }`}
                   >
-                    {on && (
-                      <motion.span
-                        layoutId="story-switch-thumb"
-                        aria-hidden
-                        className="absolute inset-0 rounded-full bg-sol"
-                        transition={
-                          reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 36 }
-                        }
-                      />
-                    )}
                     <span className="relative">{m === "short" ? "Short read" : "Full story"}</span>
                     {times && (
                       <span className={`relative text-[14px] ${on ? "text-paper/60" : "text-sol-dim"}`}>

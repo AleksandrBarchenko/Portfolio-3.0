@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 /* Meta rows shown under the title (Company / Period / Product). */
 const META = [
   { label: "Company", value: "ElioVP" },
-  { label: "Period", value: "March 2025" },
+  { label: "Period", value: "2025" },
   { label: "Product", value: "B2B" },
 ];
 
@@ -58,11 +58,11 @@ export default function EliovpCaseStudy() {
               <div className="flex items-center gap-[19px] text-[14px] uppercase tracking-wide text-sol">
                 <span>website redesign</span>
                 <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />
-                <span>2024–2025</span>
+                <span>2025</span>
               </div>
 
               <h1 className="mt-6 text-[clamp(25.5px,3.75vw,45px)] font-light leading-[1.1] text-sol">
-                Comprehensive web experience for electric mobility solution
+                Comprehensive web experience for electric mobility solutions
               </h1>
             </div>
 
@@ -148,7 +148,7 @@ export default function EliovpCaseStudy() {
           <Link href="/" className="transition-colors hover:text-accent">
             Home
           </Link>
-          <span>© 2025</span>
+          <span>© 2026</span>
         </div>
       </footer>
     </main>

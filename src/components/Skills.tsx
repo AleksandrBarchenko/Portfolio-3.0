@@ -11,7 +11,7 @@ import { useSound } from "@/components/sound/SoundProvider";
    invert to white, with a soft airy whoosh (a gentler cousin of the work
    cards' "shh"). Words without a matching image just dim the rest. */
 const INTRO =
-  "I’m Lead Product Designer with 8+ years crafting impactful user experiences for B2C, SaaS, Mobile & Web, so i can help you with:";
+  "I’m Digital Product Designer with 8+ years crafting impactful user experiences for B2C, SaaS, Mobile & Web, so i can help you with:";
 
 /* `rot` is a literal Tailwind class (kept literal so the JIT picks it up) that
    tilts the torn photo a random 10–15° in a random direction. */
@@ -111,13 +111,15 @@ export default function Skills() {
   return (
     <div className={`${SHELL} w-full`}>
       <div className="flex flex-col gap-12 lg:gap-16">
-        <p className="mx-auto max-w-[890px] text-center font-serif text-[clamp(22px,2.6vw,32px)] italic leading-[1.2] text-accent">
+        <p className="mx-auto max-w-[890px] text-center font-serif lg:max-w-[980px] lg:text-balance text-[clamp(22px,2.6vw,32px)] italic leading-[1.2] text-accent">
           {INTRO}
         </p>
 
-        <div className="group/skills flex flex-wrap items-center gap-x-5 gap-y-4 text-[clamp(34px,6.4vw,64px)] font-normal leading-none text-sol">
+        <div className="group/skills flex flex-wrap items-center justify-center gap-x-2 gap-y-3 text-[clamp(20px,5.6vw,22px)] font-normal leading-none text-sol sm:justify-start sm:gap-x-5 sm:gap-y-4 sm:text-[clamp(34px,6.4vw,64px)]">
           {SKILLS.map((skill, i) => (
-            <span key={skill.word} className="contents">
+            /* Each dot is glued to the word before it so a wrap never leaves
+               a stray dot at the start of a line. */
+            <span key={skill.word} className="inline-flex items-center gap-x-2 sm:gap-x-5">
               <Word {...skill} />
               {i < SKILLS.length - 1 && <Dot />}
             </span>
