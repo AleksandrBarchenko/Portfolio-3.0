@@ -14,16 +14,17 @@ const INTRO =
   "I’m Digital Product Designer with 8+ years crafting impactful user experiences for B2C, SaaS, Mobile & Web, so i can help you with:";
 
 /* `rot` is a literal Tailwind class (kept literal so the JIT picks it up) that
-   tilts the torn photo a random 10–15° in a random direction. */
-type Skill = { word: string; img?: string; rot?: string };
+   tilts the torn photo a random 10–15° in a random direction. `rowEnd` ends a
+   row on desktop, where the list is set as three centred lines (3 / 2 / 3). */
+type Skill = { word: string; img?: string; rot?: string; rowEnd?: boolean };
 
 /* Only words whose name matches an image file get a hover photo. */
 const SKILLS: Skill[] = [
   { word: "research", img: "/skills/research.png", rot: "rotate-[-12deg]" },
   { word: "product design" },
-  { word: "leadership", img: "/skills/leadership.png", rot: "rotate-[11deg]" },
+  { word: "leadership", img: "/skills/leadership.png", rot: "rotate-[11deg]", rowEnd: true },
   { word: "design systems", img: "/skills/design-systems.png", rot: "rotate-[-14deg]" },
-  { word: "design strategy" },
+  { word: "design strategy", rowEnd: true },
   { word: "user testing", img: "/skills/user-testing.png", rot: "rotate-[13deg]" },
   { word: "analytics", img: "/skills/analytics.png", rot: "rotate-[-10deg]" },
   { word: "prototyping" },
@@ -42,7 +43,7 @@ function Dot() {
   );
 }
 
-function Word({ word, img, rot }: Skill) {
+function Word({ word, img, rot }: Omit<Skill, "rowEnd">) {
   const { playSoftShift } = useSound();
 
   /* Clip the tint + white text to the torn photo's exact shape (contain +
@@ -115,13 +116,18 @@ export default function Skills() {
           {INTRO}
         </p>
 
-        <div className="group/skills flex flex-wrap items-center justify-center gap-x-2 gap-y-3 text-[clamp(20px,5.6vw,22px)] font-normal leading-none text-sol sm:justify-start sm:gap-x-5 sm:gap-y-4 sm:text-[clamp(34px,6.4vw,64px)]">
-          {SKILLS.map((skill, i) => (
-            /* Each dot is glued to the word before it so a wrap never leaves
-               a stray dot at the start of a line. */
-            <span key={skill.word} className="inline-flex items-center gap-x-2 sm:gap-x-5">
-              <Word {...skill} />
-              {i < SKILLS.length - 1 && <Dot />}
+        <div className="group/skills flex flex-wrap items-center justify-center gap-x-2 gap-y-3 text-[clamp(20px,5.6vw,22px)] font-normal leading-none text-sol sm:gap-x-5 sm:gap-y-4 sm:text-[clamp(34px,6.4vw,64px)] lg:text-[clamp(40px,4.8vw,60px)]">
+          {SKILLS.map(({ rowEnd, ...skill }, i) => (
+            <span key={skill.word} className="contents">
+              {/* Each dot is glued to the word before it so a wrap never leaves
+                  a stray dot at the start of a line. */}
+              <span className="inline-flex items-center gap-x-2 sm:gap-x-5">
+                <Word {...skill} />
+                {i < SKILLS.length - 1 && <Dot />}
+              </span>
+              {/* Desktop-only line break: a full-width, zero-height flex item.
+                  The negative margin cancels the extra row gap it adds. */}
+              {rowEnd && <span aria-hidden className="hidden basis-full lg:-my-2 lg:block" />}
             </span>
           ))}
         </div>
