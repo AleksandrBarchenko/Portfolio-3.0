@@ -84,7 +84,7 @@ const VIDEO_SCALE = 1.2;
 
 // Case-studies overview shown in the video modal (opened by clicking the TV
 // head's screen, or the standalone play button in orb mode).
-const VIDEO_ID = "wAmmrrn-voc";
+const VIDEO_ID = "miiIqjMM4cQ";
 const VIDEO_START = 1;
 
 function Caret() {
