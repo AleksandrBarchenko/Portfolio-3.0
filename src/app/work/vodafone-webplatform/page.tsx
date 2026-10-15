@@ -213,7 +213,7 @@ export default function VodafoneWebPlatformCaseStudy() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/projects/vodafone-webplatform/hero.png"
-              alt="Vodafone Ukraine web platform — key screens"
+              alt="Vodafone Ukraine web platform — B2C My Vodafone and B2B corporate dashboards"
               loading="lazy"
               className="h-auto w-full"
             />

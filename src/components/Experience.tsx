@@ -71,7 +71,9 @@ const SCROLL_KEYS = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", " ", 
 // TV-head-only: the still shown inside the screen for the video section, the
 // resting three-quarter turn on the hero, and how much the head grows when it
 // centres for the video page.
-const VIDEO_POSTER = "/video/frame.png";
+const VIDEO_POSTER = "/video/head-preview.jpg";
+// The poster already has its play triangle baked in, so the screen's own glyph stays off.
+const POSTER_HAS_PLAY = true;
 // 0 so the head's resting turn is driven entirely by the per-state `yaw` in
 // DEFAULT_TV_SETTINGS (the tuning lab's single source of truth), not layered on.
 const HERO_YAW = 0;
@@ -714,7 +716,7 @@ export default function Experience() {
               baseYaw={active === "video" ? 0 : HERO_YAW}
               screenMediaSrc={VIDEO_POSTER}
               screenMediaActive={face && active === "video"}
-              screenShowPlay={face && active === "video"}
+              screenShowPlay={!POSTER_HAS_PLAY && face && active === "video"}
               onScreenActivate={() => setVideoOpen(true)}
             />
           </motion.div>
@@ -825,7 +827,7 @@ export default function Experience() {
               state={orbState}
               screenMediaSrc={face ? VIDEO_POSTER : undefined}
               screenMediaActive={face}
-              screenShowPlay={face}
+              screenShowPlay={!POSTER_HAS_PLAY && face}
               onScreenActivate={() => setVideoOpen(true)}
             />
           )}
