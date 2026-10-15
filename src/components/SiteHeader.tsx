@@ -5,6 +5,7 @@ import { TypeOnHover } from "./TypeOnHover";
 import { SHELL } from "./shell";
 import { useActiveSection, PAGE_BG, BG_TRANSITION } from "./ActiveSection";
 import { SoundToggle } from "./sound/SoundToggle";
+import { MobileMenu } from "./MobileMenu";
 
 /* Only three destinations. `match` lists the section ids that light this item
    up as the active one (hero has none → no menu item is active on the hero). */
@@ -51,7 +52,7 @@ export function SiteHeader() {
               a.barchenko
             </span>
           </a>
-          <div className="flex items-center gap-6 sm:gap-10">
+          <div className="flex items-center gap-3 sm:gap-10">
             <nav className="hidden items-center gap-10 font-serif text-[20px] sm:flex">
               {NAV.map((item) => {
                 const isActive = item.match.includes(active);
@@ -73,6 +74,7 @@ export function SiteHeader() {
             </nav>
             {/* <ThemeToggle /> */}
             <SoundToggle />
+            <MobileMenu />
           </div>
         </div>
       </div>
